@@ -1161,6 +1161,15 @@ if ($nextMonth > 12) {
                             <label for="tarfDescription" class="form-label">Description</label>
                             <textarea class="form-control" id="tarfDescription" name="description" rows="3" placeholder="Enter TARF description (optional)"></textarea>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="tarfCalendarKind" class="form-label">Activity type</label>
+                            <select class="form-select" id="tarfCalendarKind" name="calendar_kind">
+                                <option value="travel">Travel TARF (off-site — auto DTR / no timekeeper)</option>
+                                <option value="ntarf">NTARF / on-site activity — employees use timekeeper</option>
+                            </select>
+                            <small class="form-text text-muted">For NTARF and other on-site activities, participants still record time in, lunch out, lunch in, and time out.</small>
+                        </div>
                         
                         <div class="mb-3">
                             <label for="tarfFile" class="form-label">TARF File</label>
@@ -2531,6 +2540,8 @@ if ($nextMonth > 12) {
             document.getElementById('selectedEmployeeCount').textContent = '0';
             document.getElementById('tarfFilePreview').classList.add('d-none');
             document.getElementById('tarfFileName').textContent = '';
+            var tck = document.getElementById('tarfCalendarKind');
+            if (tck) { tck.value = 'travel'; }
             
             // Reset filters and pagination
             document.getElementById('employeeSearch').value = '';
@@ -2571,6 +2582,8 @@ if ($nextMonth > 12) {
                     document.getElementById('tarfAction').value = 'update';
                     document.getElementById('tarfTitle').value = tarf.title;
                     document.getElementById('tarfDescription').value = tarf.description || '';
+                    var tck = document.getElementById('tarfCalendarKind');
+                    if (tck) { tck.value = (tarf.calendar_kind === 'ntarf') ? 'ntarf' : 'travel'; }
                     document.getElementById('tarfEditDate').value = tarf.date;
                     document.getElementById('tarfModalLabel').innerHTML = 'Edit TARF';
                     document.getElementById('deleteTarfBtn').classList.remove('d-none');
@@ -3108,6 +3121,8 @@ if ($nextMonth > 12) {
                 formData.append('description', description);
                 formData.append('date', date);
                 formData.append('employee_ids', JSON.stringify(selectedEmployees));
+                var tck = document.getElementById('tarfCalendarKind');
+                formData.append('calendar_kind', tck ? tck.value : 'travel');
                 if (tarfFile) {
                     formData.append('tarf_file', tarfFile);
                 }
@@ -3146,6 +3161,8 @@ if ($nextMonth > 12) {
                 formData.append('description', description);
                 formData.append('dates', JSON.stringify(dates));
                 formData.append('employee_ids', JSON.stringify(selectedEmployees));
+                var tckCr = document.getElementById('tarfCalendarKind');
+                formData.append('calendar_kind', tckCr ? tckCr.value : 'travel');
                 if (tarfFile) {
                     formData.append('tarf_file', tarfFile);
                 }

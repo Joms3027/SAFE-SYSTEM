@@ -343,7 +343,7 @@ include_navigation();
             <main class="main-content">
                 <div class="page-header py-3">
                     <h1 class="page-title"><i class="fas fa-clipboard-list me-2"></i>Activity requests (TARF &amp; NTARF)</h1>
-                    <p class="text-muted mb-0">Use the tabs for <strong>TARF</strong> (travel) or <strong>NTARF</strong> (non-travel). The President receives your request only after parallel endorsement by your <strong>supervisor</strong>, <strong>applicable endorser</strong>, and—when fund certification applies—a third endorsement from <strong>Budget or Accounting</strong> (per your form). Requests without fund certification require endorsements from supervisor and applicable endorser only.</p>
+                    <p class="text-muted mb-0">Use the tabs for <strong>TARF</strong> (travel) or <strong>NTARF</strong> (non-travel). The President receives your request only after parallel endorsement by your <strong>supervisor</strong>, <strong>applicable endorser</strong>, and—when fund certification applies—a third endorsement from <strong>Budget or Accounting</strong> (per your form). Requests without fund certification require endorsements from supervisor and applicable endorser only. <strong>NTARF</strong> is on-site: you and everyone involved must still record <strong>time in, lunch out, lunch in, and time out</strong> at the timekeeper on each activity day. Only <strong>travel TARF</strong> uses system auto-attendance from official time.</p>
                 </div>
 
                 <ul class="nav nav-tabs mb-3 flex-nowrap tarf-main-tabs" id="activityRequestMainTabs" role="tablist">
@@ -686,6 +686,9 @@ include_navigation();
                 <div class="tab-pane fade" id="pane-ntarf-main" role="tabpanel" aria-labelledby="tab-ntarf-main" tabindex="0">
                 <div class="card shadow-sm mb-5 border-primary border-opacity-25">
                     <div class="card-body">
+                        <div class="alert alert-info mb-4" role="status">
+                            <strong>Time entry required.</strong> NTARF covers a non-travel, on-site activity. The requester and every person listed as involved must complete the usual timekeeper sequence—<strong>time in</strong>, <strong>lunch out</strong>, <strong>lunch in</strong>, and <strong>time out</strong>—on each day covered by the activity dates. Submitting this form does not replace DTR logging.
+                        </div>
                         <form id="ntarfForm" method="post" action="<?php echo htmlspecialchars(clean_url($basePath . '/faculty/ntarf_request_submit_api.php', $basePath), ENT_QUOTES, 'UTF-8'); ?>" enctype="multipart/form-data" class="tarf-form">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfPageToken, ENT_QUOTES, 'UTF-8'); ?>">
 

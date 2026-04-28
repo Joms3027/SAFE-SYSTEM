@@ -12,10 +12,11 @@ require_once '../includes/functions.php';
 require_once '../includes/database.php';
 require_once '../includes/mailer.php';
 require_once '../includes/notifications.php';
+require_once '../includes/tarf_calendar_kind.php';
 
 // Bump when adding migrations below so the cache is invalidated once.
 if (!defined('CALENDAR_API_SCHEMA_VERSION')) {
-    define('CALENDAR_API_SCHEMA_VERSION', 3);
+    define('CALENDAR_API_SCHEMA_VERSION', 4);
 }
 
 // Ensure session is active before accessing $_SESSION
@@ -689,6 +690,16 @@ try {
                     $stmt->execute([$date]);
                     $tarfRow = $stmt->fetch();
                     $tarfId = $tarfRow ? $tarfRow['id'] : null;
+                }
+
+                if ($tarfId) {
+                    tarf_calendar_kind_ensure_column($db);
+                    $ck = $db->prepare('SELECT calendar_kind FROM tarf WHERE id = ? LIMIT 1');
+                    $ck->execute([$tarfId]);
+                    $trow = $ck->fetch(PDO::FETCH_ASSOC);
+                    if ($trow && ($trow['calendar_kind'] ?? 'travel') === 'ntarf') {
+                        continue;
+                    }
                 }
                 
                 foreach ($employeeIds as $employeeId) {
@@ -1667,6 +1678,7 @@ try {
                     description TEXT,
                     file_path VARCHAR(500),
                     date DATE NOT NULL,
+                    calendar_kind VARCHAR(16) NOT NULL DEFAULT 'travel',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     INDEX idx_date (date)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
@@ -1703,6 +1715,7 @@ try {
                 } catch (Exception $e) {
                     // Column might already exist, ignore
                 }
+                tarf_calendar_kind_ensure_column($db);
             }
             
             // Check if tarf_employees table exists
@@ -1776,6 +1789,9 @@ try {
             echo json_encode(['success' => false, 'message' => 'At least one employee is required']);
             exit();
         }
+
+        $calendarKind = tarf_calendar_kind_normalize($_POST['calendar_kind'] ?? 'travel');
+        tarf_calendar_kind_ensure_column($db);
         
         // Validate dates
         foreach ($dates as $date) {
@@ -1824,8 +1840,8 @@ try {
             
             // Create TARF entry for each date
             foreach ($dates as $date) {
-                $stmt = $db->prepare("INSERT INTO tarf (title, description, file_path, date) VALUES (?, ?, ?, ?)");
-                if (!$stmt->execute([$title, $description ?: null, $filePath, $date])) {
+                $stmt = $db->prepare("INSERT INTO tarf (title, description, file_path, date, calendar_kind) VALUES (?, ?, ?, ?, ?)");
+                if (!$stmt->execute([$title, $description ?: null, $filePath, $date, $calendarKind])) {
                     throw new Exception('Failed to insert TARF record');
                 }
                 
@@ -1854,8 +1870,9 @@ try {
             
             $db->commit();
             
-            // Auto-create 8-hour attendance logs for TARF employees
-            createTarfAttendanceLogs($dates, $employeeIds, $db, $createdTarfIds);
+            if ($calendarKind === 'travel') {
+                createTarfAttendanceLogs($dates, $employeeIds, $db, $createdTarfIds);
+            }
             
             logAction('TARF_CREATE', "Created TARF: $title for " . count($dates) . " date(s) with $employeeCount employee(s)");
             
@@ -1993,6 +2010,8 @@ try {
             exit();
         }
         
+        tarf_calendar_kind_ensure_column($db);
+        
         try {
             // Check if description and file_path columns exist
             $hasDescription = false;
@@ -2004,7 +2023,7 @@ try {
                 $hasFilePath = $stmt->rowCount() > 0;
             } catch (Exception $e) { /* ignore */ }
             
-            $cols = ['id', 'title', 'date'];
+            $cols = ['id', 'title', 'date', 'calendar_kind'];
             if ($hasDescription) $cols[] = 'description';
             if ($hasFilePath) $cols[] = 'file_path';
             $colList = implode(', ', $cols);
@@ -2031,6 +2050,7 @@ try {
                     'description' => $tarf['description'] ?? '',
                     'file_path' => $tarf['file_path'] ?? null,
                     'date' => $tarf['date'],
+                    'calendar_kind' => $tarf['calendar_kind'] ?? 'travel',
                     'employee_ids' => $employees
                 ]
             ]);
@@ -2070,6 +2090,9 @@ try {
             echo json_encode(['success' => false, 'message' => 'At least one employee is required']);
             exit();
         }
+
+        $calendarKind = tarf_calendar_kind_normalize($_POST['calendar_kind'] ?? 'travel');
+        tarf_calendar_kind_ensure_column($db);
         
         // Handle file upload
         $filePath = null;
@@ -2122,13 +2145,13 @@ try {
         try {
             // Update TARF entry
             if ($filePath !== null) {
-                $stmt = $db->prepare("UPDATE tarf SET title = ?, description = ?, file_path = ?, date = ? WHERE id = ?");
-                if (!$stmt->execute([$title, $description ?: null, $filePath, $date, $tarfId])) {
+                $stmt = $db->prepare("UPDATE tarf SET title = ?, description = ?, file_path = ?, date = ?, calendar_kind = ? WHERE id = ?");
+                if (!$stmt->execute([$title, $description ?: null, $filePath, $date, $calendarKind, $tarfId])) {
                     throw new Exception('Failed to update TARF record');
                 }
             } else {
-                $stmt = $db->prepare("UPDATE tarf SET title = ?, description = ?, date = ? WHERE id = ?");
-                if (!$stmt->execute([$title, $description ?: null, $date, $tarfId])) {
+                $stmt = $db->prepare("UPDATE tarf SET title = ?, description = ?, date = ?, calendar_kind = ? WHERE id = ?");
+                if (!$stmt->execute([$title, $description ?: null, $date, $calendarKind, $tarfId])) {
                     throw new Exception('Failed to update TARF record');
                 }
             }
@@ -2150,8 +2173,9 @@ try {
             
             $db->commit();
             
-            // Auto-create/update 8-hour attendance log for TARF employee
-            createTarfAttendanceLogs([$date], $employeeIds, $db);
+            if ($calendarKind === 'travel') {
+                createTarfAttendanceLogs([$date], $employeeIds, $db, [$tarfId]);
+            }
             
             logAction('TARF_UPDATE', "Updated TARF ID: $tarfId - $title");
             

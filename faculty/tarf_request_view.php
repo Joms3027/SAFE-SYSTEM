@@ -105,6 +105,12 @@ if ($status === 'pending') {
             ?></div>
         <?php endif; ?>
 
+        <?php if ($isNtarf): ?>
+        <div class="no-print alert alert-secondary py-2 mb-3" role="status">
+            <strong>Time entry:</strong> NTARF participants remain on campus for the activity. The requester and all involved personnel must still use the timekeeper—<strong>time in</strong>, <strong>lunch out</strong>, <strong>lunch in</strong>, <strong>time out</strong>—on each activity day. This approval does not substitute for those logs.
+        </div>
+        <?php endif; ?>
+
         <?php echo $disappCardHtml; ?>
             </main>
         </div>

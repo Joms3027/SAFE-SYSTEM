@@ -2,6 +2,7 @@
 require_once '../../../../includes/config.php';
 require_once '../../../../includes/functions.php';
 require_once '../../../../includes/database.php';
+require_once '../../../../includes/tarf_calendar_kind.php';
 // no requireTimekeeper - open access
 
 header('Content-Type: application/json');
@@ -157,10 +158,13 @@ try {
     $isHoliday = !empty($holidayData);
     $holidayTitle = $holidayData ? $holidayData['title'] : null;
     
+    tarf_calendar_kind_ensure_column($db);
+
     $stmtTarf = $db->prepare("
         SELECT t.id, t.title FROM tarf t
         INNER JOIN tarf_employees te ON t.id = te.tarf_id
-        WHERE te.employee_id = ? AND t.date = ? LIMIT 1
+        WHERE te.employee_id = ? AND t.date = ? AND t.calendar_kind = 'travel'
+        LIMIT 1
     ");
     $stmtTarf->execute([$row['employee_id'], $today]);
     $tarfData = $stmtTarf->fetch();

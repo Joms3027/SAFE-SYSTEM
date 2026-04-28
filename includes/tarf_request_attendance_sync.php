@@ -3,6 +3,8 @@
  * When a TARF request (tarf_requests) is fully approved (status = endorsed), mirror into
  * calendar `tarf` / `tarf_employees` and `attendance_logs` so DTR and timekeeper behave like admin-calendar TARFs.
  */
+require_once __DIR__ . '/tarf_calendar_kind.php';
+
 if (!function_exists('tarf_request_default_hours_no_official')) {
     /** Standard credited hours when no employee_official_times row applies for that TARF date. */
     function tarf_request_default_hours_no_official(): float
@@ -152,6 +154,42 @@ if (!function_exists('tarf_request_collect_travel_employee_ids')) {
     }
 }
 
+if (!function_exists('tarf_request_collect_ntarf_employee_ids')) {
+    /**
+     * Employee IDs for people on an NTARF (involved directory selections + requester).
+     *
+     * @return list<string>
+     */
+    function tarf_request_collect_ntarf_employee_ids(array $tarfRequestRow, array $form, PDO $db): array
+    {
+        $out = [];
+        $uids = $form['involved_personnel_user_ids'] ?? [];
+        if (is_array($uids)) {
+            $uids = array_values(array_unique(array_map('intval', $uids)));
+            $uids = array_filter($uids, function ($x) {
+                return $x > 0;
+            });
+            if ($uids !== []) {
+                $ph = implode(',', array_fill(0, count($uids), '?'));
+                $st = $db->prepare("SELECT employee_id FROM faculty_profiles WHERE user_id IN ($ph) AND TRIM(COALESCE(employee_id,'')) <> ''");
+                $st->execute($uids);
+                while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
+                    $eid = trim((string) ($r['employee_id'] ?? ''));
+                    if ($eid !== '') {
+                        $out[$eid] = true;
+                    }
+                }
+            }
+        }
+        $reqEmp = trim((string) ($tarfRequestRow['employee_id'] ?? ''));
+        if ($reqEmp !== '') {
+            $out[$reqEmp] = true;
+        }
+
+        return array_keys($out);
+    }
+}
+
 if (!function_exists('tarf_request_ensure_tarf_tables')) {
     function tarf_request_ensure_tarf_tables(PDO $db): void
     {
@@ -191,6 +229,7 @@ if (!function_exists('tarf_request_ensure_tarf_tables')) {
         } catch (Exception $e) {
             error_log('tarf_request_ensure_tarf_tables tarf_employees: ' . $e->getMessage());
         }
+        tarf_calendar_kind_ensure_column($db);
         foreach (['remarks' => 'VARCHAR(500) DEFAULT NULL', 'tarf_id' => 'INT DEFAULT NULL'] as $col => $def) {
             try {
                 $db->exec("ALTER TABLE attendance_logs ADD COLUMN $col $def");
@@ -202,6 +241,90 @@ if (!function_exists('tarf_request_ensure_tarf_tables')) {
             $db->exec('ALTER TABLE attendance_logs ADD INDEX idx_tarf_id (tarf_id)');
         } catch (Exception $e) {
             /* exists */
+        }
+    }
+}
+
+if (!function_exists('tarf_request_sync_ntarf_endorsed_to_calendar')) {
+    /**
+     * Mirror endorsed NTARF to calendar `tarf` / `tarf_employees` with calendar_kind ntarf (no auto attendance_logs).
+     */
+    function tarf_request_sync_ntarf_endorsed_to_calendar(PDO $db, int $tarfRequestId, array $row, array $form): void
+    {
+        tarf_request_ensure_tarf_tables($db);
+        tarf_calendar_kind_ensure_column($db);
+
+        $start = trim((string) ($form['date_activity_start'] ?? ''));
+        $end = trim((string) ($form['date_activity_end'] ?? ''));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $start) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end) || $start > $end) {
+            return;
+        }
+
+        $employeeIds = tarf_request_collect_ntarf_employee_ids($row, $form, $db);
+        if ($employeeIds === []) {
+            return;
+        }
+
+        $eventTitle = trim((string) ($form['activity_requested'] ?? ''));
+        if ($eventTitle === '') {
+            $eventTitle = 'NTARF #' . $tarfRequestId;
+        }
+        if (function_exists('mb_substr')) {
+            $titleShort = mb_substr($eventTitle, 0, 220);
+        } else {
+            $titleShort = substr($eventTitle, 0, 220);
+        }
+
+        $period = new DatePeriod(
+            new DateTime($start),
+            new DateInterval('P1D'),
+            (new DateTime($end))->modify('+1 day')
+        );
+
+        foreach ($period as $dateObj) {
+            /** @var DateTime $dateObj */
+            $dateStr = $dateObj->format('Y-m-d');
+
+            $insTarf = $db->prepare(
+                'INSERT INTO tarf (title, description, date, calendar_kind, created_at) VALUES (?, ?, ?, ?, NOW())'
+            );
+            try {
+                $insTarf->execute([
+                    $titleShort,
+                    'ntarf_request_id:' . $tarfRequestId,
+                    $dateStr,
+                    'ntarf',
+                ]);
+            } catch (Exception $e) {
+                try {
+                    $insSimple = $db->prepare('INSERT INTO tarf (title, description, date, created_at) VALUES (?, ?, ?, NOW())');
+                    $insSimple->execute([$titleShort, 'ntarf_request_id:' . $tarfRequestId, $dateStr]);
+                } catch (Exception $e2) {
+                    error_log('tarf_request_sync_ntarf insert tarf: ' . $e2->getMessage());
+                    continue;
+                }
+            }
+            $calendarTarfId = (int) $db->lastInsertId();
+            if ($calendarTarfId <= 0) {
+                continue;
+            }
+            try {
+                $db->prepare('UPDATE tarf SET calendar_kind = ? WHERE id = ?')->execute(['ntarf', $calendarTarfId]);
+            } catch (Exception $e) {
+                /* ignore */
+            }
+
+            $insTe = $db->prepare('INSERT INTO tarf_employees (tarf_id, employee_id) VALUES (?, ?)');
+            foreach ($employeeIds as $eid) {
+                if ($eid === '') {
+                    continue;
+                }
+                try {
+                    $insTe->execute([$calendarTarfId, $eid]);
+                } catch (Exception $e) {
+                    error_log('tarf_request_sync_ntarf tarf_employees: ' . $e->getMessage());
+                }
+            }
         }
     }
 }
@@ -227,6 +350,11 @@ if (!function_exists('tarf_request_sync_endorsed_to_attendance')) {
             $form = [];
         }
 
+        if (($form['form_kind'] ?? '') === 'ntarf') {
+            tarf_request_sync_ntarf_endorsed_to_calendar($db, $tarfRequestId, $row, $form);
+            return;
+        }
+
         $dep = trim((string) ($form['date_departure'] ?? ''));
         $ret = trim((string) ($form['date_return'] ?? ''));
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dep) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $ret) || $dep > $ret) {
@@ -239,6 +367,7 @@ if (!function_exists('tarf_request_sync_endorsed_to_attendance')) {
         }
 
         tarf_request_ensure_tarf_tables($db);
+        tarf_calendar_kind_ensure_column($db);
 
         $eventTitle = trim((string) ($form['event_purpose'] ?? ''));
         if ($eventTitle === '') {
@@ -265,13 +394,14 @@ if (!function_exists('tarf_request_sync_endorsed_to_attendance')) {
             $dateStr = $dateObj->format('Y-m-d');
 
             $insTarf = $db->prepare(
-                'INSERT INTO tarf (title, description, date, created_at) VALUES (?, ?, ?, NOW())'
+                'INSERT INTO tarf (title, description, date, calendar_kind, created_at) VALUES (?, ?, ?, ?, NOW())'
             );
             try {
                 $insTarf->execute([
                     $titleShort,
                     'tarf_request_id:' . $tarfRequestId,
                     $dateStr,
+                    'travel',
                 ]);
             } catch (Exception $e) {
                 try {
@@ -285,6 +415,11 @@ if (!function_exists('tarf_request_sync_endorsed_to_attendance')) {
             $calendarTarfId = (int) $db->lastInsertId();
             if ($calendarTarfId <= 0) {
                 continue;
+            }
+            try {
+                $db->prepare('UPDATE tarf SET calendar_kind = ? WHERE id = ?')->execute(['travel', $calendarTarfId]);
+            } catch (Exception $e) {
+                /* ignore */
             }
 
             $insTe = $db->prepare('INSERT INTO tarf_employees (tarf_id, employee_id) VALUES (?, ?)');

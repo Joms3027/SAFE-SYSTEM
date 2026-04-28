@@ -2,6 +2,7 @@
 require_once '../../includes/config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/database.php';
+require_once '../../includes/tarf_calendar_kind.php';
 
 requireTimekeeper();
 
@@ -286,12 +287,13 @@ try {
         exit();
     }
     
-    // Check if employee is in TARF for today
+    // Travel TARF only — NTARF participants still record time in/out on site
+    tarf_calendar_kind_ensure_column($db);
     $stmtTarf = $db->prepare("
         SELECT t.id, t.title 
         FROM tarf t
         INNER JOIN tarf_employees te ON t.id = te.tarf_id
-        WHERE te.employee_id = ? AND t.date = ?
+        WHERE te.employee_id = ? AND t.date = ? AND t.calendar_kind = 'travel'
         LIMIT 1
     ");
     $stmtTarf->execute([$employeeId, $today]);
