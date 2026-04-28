@@ -662,7 +662,7 @@ include_navigation();
                 return false;
             }
             function punchCell(log, rawTime) {
-                if (logShowsTarfCells(log)) return 'TARF';
+                if (logShowsTarfCells(log)) return 'TRAVEL';
                 return formatTimeForDisplay(log ? (rawTime || '') : '') || '';
             }
             function parseTime(timeStr) {

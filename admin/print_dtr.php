@@ -1260,7 +1260,7 @@ try {
                     if ($logData['status'] === 'LEAVE') {
                         $statusBadge = '<span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">LEAVE</span>';
                     } else if ($logData['status'] === 'TARF' || dtr_row_is_tarf_mirror_log($log)) {
-                        $statusBadge = '<span style="background-color: #0dcaf0; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 10px;">TARF</span>';
+                        $statusBadge = '<span style="background-color: #0dcaf0; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 10px;">TRAVEL</span>';
                     } else if ($logData['status'] === 'Complete') {
                         $statusBadge = '<span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Complete</span>';
                     } else if ($logData['status'] === 'Late') {
@@ -1301,7 +1301,7 @@ try {
                             if ($isLeaveRow) {
                                 echo 'LEAVE';
                             } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                echo 'TARF';
+                                echo 'TRAVEL';
                             } elseif ($isHoliday && !$hasHolidayAttendance) {
                                 // Half-day AM: morning segment is declared holiday — show HOLIDAY in Time In / Lunch Out
                                 if ($hdRow && $hpRow === 'morning') {
@@ -1321,7 +1321,7 @@ try {
                             if ($isLeaveRow) {
                                 echo 'LEAVE';
                             } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                echo 'TARF';
+                                echo 'TRAVEL';
                             } elseif ($isHoliday && !$hasHolidayAttendance) {
                                 if ($hdRow && $hpRow === 'morning') {
                                     echo htmlspecialchars('HOLIDAY');
@@ -1340,7 +1340,7 @@ try {
                             if ($isLeaveRow) {
                                 echo 'LEAVE';
                             } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                echo 'TARF';
+                                echo 'TRAVEL';
                             } elseif ($isHoliday && !$hasHolidayAttendance) {
                                 // Half-day PM: afternoon segment is declared holiday — HOLIDAY in Lunch In / Time Out
                                 if ($hdRow && $hpRow === 'afternoon') {
@@ -1360,7 +1360,7 @@ try {
                             if ($isLeaveRow) {
                                 echo 'LEAVE';
                             } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                echo 'TARF';
+                                echo 'TRAVEL';
                             } elseif ($isHoliday && !$hasHolidayAttendance) {
                                 if ($hdRow && $hpRow === 'afternoon') {
                                     echo htmlspecialchars('HOLIDAY');

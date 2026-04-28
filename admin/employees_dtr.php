@@ -106,6 +106,8 @@ if ($submissionFilter === 'submitted') {
         #dtrModal .dtr-table tbody tr.dtr-holiday-row td.dtr-holiday-label { text-align: center; }
         #dtrModal .dtr-table tbody tr.dtr-half-day-holiday { background-color: #fff3e0; }
         #dtrModal .dtr-table tbody tr.dtr-half-day-holiday td.dtr-holiday-label { font-size: 0.7rem; color: #e65100; font-weight: 600; }
+        #dtrModal .dtr-table tbody tr.dtr-tarf-row { background-color: #e0f7fa; }
+        #dtrModal .dtr-table tbody tr.dtr-tarf-row td.dtr-tarf-label { text-align: center; font-size: 0.7rem; color: #006064; font-weight: 700; }
         #dtrModal .dtr-table tbody tr.dtr-total { font-weight: 700; }
         #dtrModal .dtr-official-row { font-size: 0.9rem; margin-bottom: 0.5rem; }
         #dtrModal .dtr-certify { font-size: 0.8rem; margin-top: 0.75rem; margin-bottom: 0.25rem; line-height: 1.35; }
@@ -767,9 +769,15 @@ if ($submissionFilter === 'submitted') {
                 let utHrs = '—', utMin = '—';
                 const isLeave = (timeIn === 'LEAVE' || lunchOut === 'LEAVE' || lunchIn === 'LEAVE' || timeOut === 'LEAVE');
                 const isHolidayRow = (timeIn === 'HOLIDAY' || lunchOut === 'HOLIDAY' || lunchIn === 'HOLIDAY' || timeOut === 'HOLIDAY');
+                const tarfRemarks = log ? String(log.remarks || '').trim() : '';
+                const isTarfRow = !!log && (
+                    (Number(log.tarf_id) > 0 && tarfRemarks.indexOf('TARF:') === 0)
+                    || tarfRemarks.indexOf('TARF_HOURS_CREDIT:') !== -1
+                    || tarfRemarks.toUpperCase() === 'TARF'
+                );
                 const isHalfDayHoliday = log && log.holiday_is_half_day == 1;
                 const halfDayPeriod = log ? (log.holiday_half_day_period || 'morning') : 'morning';
-                if (log && !isLeave && !isHolidayRow) {
+                if (log && !isLeave && !isHolidayRow && !isTarfRow) {
                     const isSaturday = new Date(parseInt(year, 10), parseInt(month, 10) - 1, day).getDay() === 6;
                     let official;
                     if (window.officialByDate && window.officialByDate[dateKey]) {
@@ -837,6 +845,14 @@ if ($submissionFilter === 'submitted') {
                         + '<td class="dtr-time dtr-holiday-label">HOLIDAY</td>'
                         + '<td class="dtr-time dtr-holiday-label">HOLIDAY</td>'
                         + '<td class="dtr-time dtr-holiday-label">HOLIDAY</td>'
+                        + '<td class="dtr-undertime">—</td><td class="dtr-undertime">—</td>' + pardonCell;
+                } else if (isTarfRow) {
+                    tr.className = 'dtr-tarf-row';
+                    tr.innerHTML = '<td class="dtr-day">' + day + '</td>'
+                        + '<td class="dtr-time dtr-tarf-label">TRAVEL</td>'
+                        + '<td class="dtr-time dtr-tarf-label">TRAVEL</td>'
+                        + '<td class="dtr-time dtr-tarf-label">TRAVEL</td>'
+                        + '<td class="dtr-time dtr-tarf-label">TRAVEL</td>'
                         + '<td class="dtr-undertime">—</td><td class="dtr-undertime">—</td>' + pardonCell;
                 } else {
                     const fmtCell = function(v) { return (v === 'LEAVE') ? 'Leave' : v; };

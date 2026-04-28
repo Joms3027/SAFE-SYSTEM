@@ -586,7 +586,7 @@ require_once __DIR__ . '/../includes/navigation.php';
                 return false;
             }
             function punchCell(log, rawTime) {
-                if (logShowsTarfCells(log)) return 'TARF';
+                if (logShowsTarfCells(log)) return 'TRAVEL';
                 return formatTime12hr(log ? (rawTime || '') : '');
             }
             function parseTime(timeStr) {

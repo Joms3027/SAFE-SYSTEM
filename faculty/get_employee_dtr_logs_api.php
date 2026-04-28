@@ -88,8 +88,9 @@ try {
         }
     }
 
-    $query = "SELECT al.id, al.employee_id, al.log_date, al.time_in, al.lunch_out, al.lunch_in, al.time_out, al.remarks, al.holiday_id,
-              COALESCE((SELECT h.title FROM holidays h WHERE h.id = al.holiday_id LIMIT 1), (SELECT h2.title FROM holidays h2 WHERE h2.date = al.log_date LIMIT 1)) as holiday_title
+    $query = "SELECT al.id, al.employee_id, al.log_date, al.time_in, al.lunch_out, al.lunch_in, al.time_out, al.remarks, al.tarf_id, al.holiday_id,
+              COALESCE((SELECT h.title FROM holidays h WHERE h.id = al.holiday_id LIMIT 1), (SELECT h2.title FROM holidays h2 WHERE h2.date = al.log_date LIMIT 1)) as holiday_title,
+              (SELECT t.title FROM tarf t WHERE t.id = al.tarf_id LIMIT 1) as tarf_title
               FROM attendance_logs al
               WHERE al.employee_id = ? AND al.log_date >= ? AND al.log_date <= ?
               ORDER BY al.log_date ASC";
@@ -106,6 +107,12 @@ try {
         $isLeave = (strtoupper(trim($row['remarks'] ?? '')) === 'LEAVE');
         $isHoliday = (!empty($row['holiday_id']) || !empty($row['holiday_title']) || (!empty($row['remarks']) && strpos($row['remarks'], 'Holiday:') === 0));
         $hasHolidayAttendance = staff_dtr_row_has_real_holiday_attendance($row, $isHoliday);
+        $remarksRaw = (string) ($row['remarks'] ?? '');
+        $isTarfRow = (
+            (!empty($row['tarf_id']) && strpos($remarksRaw, 'TARF:') === 0)
+            || strpos($remarksRaw, 'TARF_HOURS_CREDIT:') !== false
+            || strtoupper(trim($remarksRaw)) === 'TARF'
+        );
         $leaveVal = $isLeave ? 'LEAVE' : null;
         $holidayVal = ($isHoliday && !$hasHolidayAttendance) ? 'HOLIDAY' : null;
         $timeVal = $leaveVal ?: $holidayVal;
@@ -118,6 +125,9 @@ try {
             'lunch_in' => $timeVal ?: ($row['lunch_in'] ? substr($row['lunch_in'], 0, 5) : '00:00'),
             'time_out' => $timeVal ?: ($row['time_out'] ? substr($row['time_out'], 0, 5) : '00:00'),
             'remarks' => $row['remarks'] ?? null,
+            'tarf_id' => $row['tarf_id'] ?? null,
+            'tarf_title' => $row['tarf_title'] ?? null,
+            'is_tarf' => $isTarfRow,
             'is_holiday' => $isHoliday,
             'has_holiday_attendance' => $hasHolidayAttendance,
         ];

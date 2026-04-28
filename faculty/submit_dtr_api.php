@@ -10,7 +10,10 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/database.php';
 
 requireFaculty();
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
+// User-specific JSON; never cache GET (stale submitted state after POST was breaking UI on refresh).
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 
 $database = Database::getInstance();
 $db = $database->getConnection();
@@ -45,7 +48,11 @@ try {
         $stmt->execute([$userId, $dateFrom, $dateTo]);
         $submitted = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $submitted[$row['log_date']] = $row['submitted_at'];
+            $ld = $row['log_date'] ?? '';
+            if ($ld === '') {
+                continue;
+            }
+            $submitted[date('Y-m-d', strtotime($ld))] = $row['submitted_at'];
         }
 
         // Dates that can be submitted: at least 1 day old (yesterday or earlier), not yet submitted
@@ -60,11 +67,13 @@ try {
             }
         }
 
+        // Encode empty as JSON object {} so clients never treat submitted as [] (truthy in JS).
+        $submittedJson = $submitted === [] ? new stdClass() : $submitted;
         echo json_encode([
             'success' => true,
             'year' => $year,
             'month' => $month,
-            'submitted' => $submitted,
+            'submitted' => $submittedJson,
             'canSubmit' => $canSubmit,
             'policy' => 'Submit each day\'s DTR the next day or after. Your Dean will verify it; after verification it becomes visible to Admin.',
         ]);

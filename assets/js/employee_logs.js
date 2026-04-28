@@ -714,7 +714,7 @@ async function calculateLogHours(log, officialTimesData = null) {
             overtimeMinutes: 0,
             otIn: null,
             otOut: null,
-            statusBadge: '<span class="badge bg-info text-dark">TARF</span>',
+            statusBadge: '<span class="badge bg-info text-dark">TRAVEL</span>',
             hasOfficialTime: false,
             absentHours: 0,
             absentPeriod: '',
@@ -1339,7 +1339,7 @@ async function loadLogsWithFilters(empId) {
                     const showTarfInTimeCells = (remarksTrim.indexOf('TARF_HOURS_CREDIT:') !== -1
                             && (log.tarf_id || remarksTrim.indexOf('TARF:') === 0))
                         || (Number(log.tarf_id) > 0 && remarksTrim.indexOf('TARF:') === 0);
-                    const tarfStatusBadge = '<span class="badge bg-info text-dark">TARF</span>';
+                    const tarfStatusBadge = '<span class="badge bg-info text-dark">TRAVEL</span>';
                     const statusBadgeForDtr = showTarfInTimeCells
                         ? tarfStatusBadge
                         : ((log.is_holiday && !log.has_holiday_attendance)
@@ -1350,7 +1350,7 @@ async function loadLogsWithFilters(empId) {
                     // Holiday/LEAVE: show literal label in time cells instead of parsing as time
                     const timeCell = (val) => {
                         if (showTarfInTimeCells) {
-                            return '<span class="badge bg-info text-dark">TARF</span>';
+                            return '<span class="badge bg-info text-dark">TRAVEL</span>';
                         }
                         if (val === 'HOLIDAY') {
                             return isHalfDayHolidayRow

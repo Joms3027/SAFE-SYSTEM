@@ -169,14 +169,24 @@ foreach ($employees as $emp) {
         $log = isset($logByDate[$dateKey]) ? $logByDate[$dateKey] : null;
         $ts = strtotime($dateKey);
         $isSaturday = $ts !== false && (int) date('w', $ts) === 6;
-        $ut = print_emp_dtr_undertime($log, $isSaturday, $bundle['official_regular'], $bundle['official_saturday']);
+        $logRemarks = $log ? (string) ($log['remarks'] ?? '') : '';
+        $isTarfRow = $log && (
+            (!empty($log['tarf_id']) && strpos($logRemarks, 'TARF:') === 0)
+            || strpos($logRemarks, 'TARF_HOURS_CREDIT:') !== false
+            || strtoupper(trim($logRemarks)) === 'TARF'
+        );
+        $ut = $isTarfRow ? ['h' => '—', 'm' => '—'] : print_emp_dtr_undertime($log, $isSaturday, $bundle['official_regular'], $bundle['official_saturday']);
         $mapHol = static function ($v) {
             return ($v === 'HOLIDAY') ? 'HOLIDAY' : (string) $v;
         };
-        $ti = $log ? $mapHol($log['time_in'] ?? '') : '';
-        $lo = $log ? $mapHol($log['lunch_out'] ?? '') : '';
-        $li = $log ? $mapHol($log['lunch_in'] ?? '') : '';
-        $to = $log ? $mapHol($log['time_out'] ?? '') : '';
+        if ($isTarfRow) {
+            $ti = $lo = $li = $to = 'TRAVEL';
+        } else {
+            $ti = $log ? $mapHol($log['time_in'] ?? '') : '';
+            $lo = $log ? $mapHol($log['lunch_out'] ?? '') : '';
+            $li = $log ? $mapHol($log['lunch_in'] ?? '') : '';
+            $to = $log ? $mapHol($log['time_out'] ?? '') : '';
+        }
         $rows[] = [
             'day' => $day,
             'valid' => true,

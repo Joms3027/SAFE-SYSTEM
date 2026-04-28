@@ -125,20 +125,36 @@ foreach ($submissions as $row) {
     $logDate = $row['log_date'] ? date('Y-m-d', strtotime($row['log_date'])) : '';
 
     $log = null;
-    $query = "SELECT al.log_date, al.time_in, al.lunch_out, al.lunch_in, al.time_out
+    $query = "SELECT al.log_date, al.time_in, al.lunch_out, al.lunch_in, al.time_out, al.remarks, al.tarf_id
         FROM attendance_logs al
         WHERE al.employee_id = ? AND al.log_date = ?
         LIMIT 1";
     $stmtLog = $db->prepare($query);
     $stmtLog->execute([$employeeId, $logDate]);
     $r = $stmtLog->fetch(PDO::FETCH_ASSOC);
+    $isTarfLog = false;
     if ($r) {
-        $log = [
-            'time_in' => $r['time_in'] ? $fmt($r['time_in']) : '',
-            'lunch_out' => $r['lunch_out'] ? $fmt($r['lunch_out']) : '',
-            'lunch_in' => $r['lunch_in'] ? $fmt($r['lunch_in']) : '',
-            'time_out' => $r['time_out'] ? $fmt($r['time_out']) : '',
-        ];
+        $remarksRaw = (string) ($r['remarks'] ?? '');
+        $isTarfLog = (
+            (!empty($r['tarf_id']) && strpos($remarksRaw, 'TARF:') === 0)
+            || strpos($remarksRaw, 'TARF_HOURS_CREDIT:') !== false
+            || strtoupper(trim($remarksRaw)) === 'TARF'
+        );
+        if ($isTarfLog) {
+            $log = [
+                'time_in' => 'TRAVEL',
+                'lunch_out' => 'TRAVEL',
+                'lunch_in' => 'TRAVEL',
+                'time_out' => 'TRAVEL',
+            ];
+        } else {
+            $log = [
+                'time_in' => $r['time_in'] ? $fmt($r['time_in']) : '',
+                'lunch_out' => $r['lunch_out'] ? $fmt($r['lunch_out']) : '',
+                'lunch_in' => $r['lunch_in'] ? $fmt($r['lunch_in']) : '',
+                'time_out' => $r['time_out'] ? $fmt($r['time_out']) : '',
+            ];
+        }
     } else {
         $log = ['time_in' => '', 'lunch_out' => '', 'lunch_in' => '', 'time_out' => ''];
     }
@@ -272,22 +288,25 @@ $monthLabel = date('F Y', strtotime($dateFrom));
             $lunchIn = $log['lunch_in'] ?? '';
             $timeOut = $log['time_out'] ?? '';
             $utHrs = ''; $utMin = '';
+            $isTarfDay = ($timeIn === 'TRAVEL' || $lunchOut === 'TRAVEL' || $lunchIn === 'TRAVEL' || $timeOut === 'TRAVEL');
             $isSaturday = $dtr['log_date'] ? (int)date('w', strtotime($dtr['log_date'])) === 6 : false;
             $official = $parseOfficialTimes($isSaturday ? $dtr['official_saturday'] : $dtr['official_regular']);
             $undertimeMinutes = 0;
-            if ($lunchOut !== '' && trim($lunchOut) !== '' && $lunchOut !== '00:00' && $lunchOut !== '0:00') {
-                $actualLunchOut = $parseTimeToMinutes($lunchOut);
-                if ($actualLunchOut !== null && $actualLunchOut < $official['lunch_out']) {
-                    $undertimeMinutes += $official['lunch_out'] - $actualLunchOut;
+            if (!$isTarfDay) {
+                if ($lunchOut !== '' && trim($lunchOut) !== '' && $lunchOut !== '00:00' && $lunchOut !== '0:00') {
+                    $actualLunchOut = $parseTimeToMinutes($lunchOut);
+                    if ($actualLunchOut !== null && $actualLunchOut < $official['lunch_out']) {
+                        $undertimeMinutes += $official['lunch_out'] - $actualLunchOut;
+                    }
                 }
-            }
-            if ($timeOut !== '' && trim($timeOut) !== '' && $timeOut !== '00:00' && $timeOut !== '0:00') {
-                $actualOut = $parseTimeToMinutes($timeOut);
-                if ($actualOut !== null && $actualOut < $official['time_out']) {
-                    $undertimeMinutes += $official['time_out'] - $actualOut;
+                if ($timeOut !== '' && trim($timeOut) !== '' && $timeOut !== '00:00' && $timeOut !== '0:00') {
+                    $actualOut = $parseTimeToMinutes($timeOut);
+                    if ($actualOut !== null && $actualOut < $official['time_out']) {
+                        $undertimeMinutes += $official['time_out'] - $actualOut;
+                    }
+                } elseif ($lunchIn !== '' && trim($lunchIn) !== '' && $lunchIn !== '00:00' && $lunchIn !== '0:00') {
+                    $undertimeMinutes += $official['time_out'] - $official['lunch_in'];
                 }
-            } elseif ($lunchIn !== '' && trim($lunchIn) !== '' && $lunchIn !== '00:00' && $lunchIn !== '0:00') {
-                $undertimeMinutes += $official['time_out'] - $official['lunch_in'];
             }
             if ($undertimeMinutes > 0) {
                 $utHrs = (string)(int)floor($undertimeMinutes / 60);
