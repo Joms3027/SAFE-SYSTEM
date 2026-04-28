@@ -30,18 +30,28 @@ if (!function_exists('ntarf_render_disapp_card_html')) {
 
         $opts = ntarf_get_form_options();
 
-        $supportLines = [];
-        foreach ($form['ntarf_support'] ?? [] as $k) {
-            if (isset($opts['requested_support'][$k])) {
-                $supportLines[] = $opts['requested_support'][$k];
-            }
-        }
-        if (!empty($form['ntarf_support_other'])) {
-            $supportLines[] = 'Other: ' . $form['ntarf_support_other'];
-        }
-        $requestedSupportHtml = $supportLines
-            ? nl2br(tarf_disapp_escape(implode("\n", $supportLines)))
+        $requestedSupportLines = ntarf_ntarf_support_display_lines($form, $opts);
+        $requestedSupportHtml = $requestedSupportLines
+            ? nl2br(tarf_disapp_escape(implode("\n", $requestedSupportLines)))
             : '—';
+
+        $ntarfCampusCell = trim((string) ($form['activity_campus'] ?? ''));
+        if ($ntarfCampusCell === 'OUTSIDE THE CAMPUS' && !empty($form['activity_campus_other'])) {
+            $ntarfCampusCell .= ' — ' . trim((string) $form['activity_campus_other']);
+        }
+        if ($ntarfCampusCell === '') {
+            $ntarfCampusCell = '—';
+        }
+        $ntarfVenueCell = ntarf_compose_venue_display_line($form);
+        if ($ntarfVenueCell === '') {
+            $ntarfVenueCell = '—';
+        }
+        $ntarfTypeInvolvementCell = ntarf_format_involvement_display($form, $opts);
+        if ($ntarfTypeInvolvementCell === '') {
+            $ntarfTypeInvolvementCell = '—';
+        }
+        $ntarfEndorserVenueCell = trim((string) ($form['endorser_venue_availability'] ?? '')) ?: '—';
+        $ntarfEndorserElectricCell = trim((string) ($form['endorser_electricity'] ?? '')) ?: '—';
 
         $fundLine = '—';
         if (!empty($form['funding_charged_to'])) {
@@ -302,7 +312,7 @@ if (!function_exists('ntarf_render_disapp_card_html')) {
         }
         $notesFundAvailability = count($fundParts) ? implode("\n\n", $fundParts) : '—';
 
-        $venueText = trim((string) ($form['venue'] ?? ''));
+        $venueText = ntarf_compose_venue_display_line($form);
         $emDash = "\xE2\x80\x94";
         $notesVenuePmes = $venueText !== ''
             ? 'Venue (from request): ' . $venueText . "\n\nPMES / facility system notes: " . $emDash

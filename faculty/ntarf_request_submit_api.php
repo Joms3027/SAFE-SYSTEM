@@ -86,6 +86,12 @@ $endorserSet = array_flip($opts['endorsers']);
 $fundChargedSet = array_flip($opts['funding_charged']);
 $specSet = array_flip($opts['funding_specifiers']);
 $supportSet = array_keys($opts['requested_support']);
+$allowedPub = array_keys($opts['publicity_support']);
+$activityCampusSet = array_flip($opts['activity_campuses']);
+$venueSiteSet = array_flip($opts['venue_sites']);
+$endorserVenueSet = array_flip($opts['endorser_venue_availability']);
+$endorserElectricitySet = array_flip($opts['endorser_electricity']);
+$involvementKeySet = array_keys($opts['involvement_types']);
 
 $requesterName = trim($_POST['requester_name'] ?? '');
 $requesterEmail = trim($_POST['requester_email'] ?? '');
@@ -94,12 +100,21 @@ $collegeOther = trim($_POST['college_office_other'] ?? '');
 $activityRequested = trim($_POST['activity_requested'] ?? '');
 $mainOrganizer = trim($_POST['main_organizer'] ?? '');
 $justification = trim($_POST['justification'] ?? '');
-$venue = trim($_POST['venue'] ?? '');
+$activityCampus = trim($_POST['activity_campus'] ?? '');
+$activityCampusOther = trim($_POST['activity_campus_other'] ?? '');
+$venueSite = trim($_POST['venue_site'] ?? '');
+$venueSiteOther = trim($_POST['venue_site_other'] ?? '');
 $dateActivityStart = trim($_POST['date_activity_start'] ?? '');
 $dateActivityEnd = trim($_POST['date_activity_end'] ?? '');
 $timeActivityStart = trim($_POST['time_activity_start'] ?? '');
 $timeActivityEnd = trim($_POST['time_activity_end'] ?? '');
-$typeOfInvolvement = trim($_POST['type_of_involvement'] ?? '');
+
+$involvementTypesPost = $_POST['involvement_types'] ?? [];
+if (!is_array($involvementTypesPost)) {
+    $involvementTypesPost = [];
+}
+$involvementTypesPost = array_values(array_unique(array_map('strval', $involvementTypesPost)));
+$involvementOther = trim($_POST['involvement_other'] ?? '');
 
 $personsOther = trim($_POST['involved_personnel_other'] ?? '');
 $rawUserIds = $_POST['involved_personnel_user_ids'] ?? [];
@@ -117,6 +132,9 @@ $involvedUserIds = array_keys($involvedUserIds);
 
 $applicableEndorser = trim($_POST['applicable_endorser'] ?? '');
 $supervisorEmail = trim($_POST['supervisor_email'] ?? '');
+$endorserVenueAvailability = trim($_POST['endorser_venue_availability'] ?? '');
+$endorserElectricity = trim($_POST['endorser_electricity'] ?? '');
+$universityFundingRequested = strtolower(trim($_POST['university_funding_requested'] ?? ''));
 
 $supportSel = $_POST['ntarf_support'] ?? [];
 if (!is_array($supportSel)) {
@@ -125,19 +143,62 @@ if (!is_array($supportSel)) {
 $supportSel = array_values(array_unique(array_map('strval', $supportSel)));
 $supportOther = trim($_POST['ntarf_support_other'] ?? '');
 
+$publicity = $_POST['publicity'] ?? [];
+if (!is_array($publicity)) {
+    $publicity = [];
+}
+$publicity = array_values(array_unique(array_map('strval', $publicity)));
+$publicityOther = trim($_POST['publicity_other'] ?? '');
+
 $fundingChargedTo = trim($_POST['funding_charged_to'] ?? '');
 $fundingSpecifier = trim($_POST['funding_specifier'] ?? '');
 $fundingSpecifierOther = trim($_POST['funding_specifier_other'] ?? '');
 $endorserFundAvailability = trim($_POST['endorser_fund_availability'] ?? '');
 $totalEstimatedAmount = trim($_POST['total_estimated_amount'] ?? '');
 
-if ($requesterName === '' || $requesterEmail === '' || $activityRequested === '' || $mainOrganizer === '' || $justification === '' || $venue === '') {
+if ($requesterName === '' || $requesterEmail === '' || $activityRequested === '' || $mainOrganizer === '' || $justification === '') {
     echo json_encode(['success' => false, 'message' => 'Please complete all required fields.']);
     exit;
 }
 
-if ($typeOfInvolvement === '') {
-    echo json_encode(['success' => false, 'message' => 'Type of involvement is required.']);
+if (!isset($activityCampusSet[$activityCampus])) {
+    echo json_encode(['success' => false, 'message' => 'Select which campus will serve as the venue.']);
+    exit;
+}
+if ($activityCampus === 'OUTSIDE THE CAMPUS' && $activityCampusOther === '') {
+    echo json_encode(['success' => false, 'message' => 'Specify the exact off-campus location.']);
+    exit;
+}
+
+if ($venueSite === '__other__') {
+    if ($venueSiteOther === '') {
+        echo json_encode(['success' => false, 'message' => 'Specify the venue (Other).']);
+        exit;
+    }
+} elseif (!isset($venueSiteSet[$venueSite])) {
+    echo json_encode(['success' => false, 'message' => 'Select a venue from the list.']);
+    exit;
+}
+
+$involvementTypesFiltered = array_values(array_filter($involvementTypesPost, function ($k) use ($involvementKeySet) {
+    return in_array($k, $involvementKeySet, true);
+}));
+if (count($involvementTypesFiltered) === 0 && $involvementOther === '') {
+    echo json_encode(['success' => false, 'message' => 'Select at least one type of involvement or describe other.']);
+    exit;
+}
+
+if (!isset($endorserVenueSet[$endorserVenueAvailability])) {
+    echo json_encode(['success' => false, 'message' => 'Select endorser for venue availability.']);
+    exit;
+}
+if (!isset($endorserElectricitySet[$endorserElectricity])) {
+    echo json_encode(['success' => false, 'message' => 'Select endorser for electricity and generator use.']);
+    exit;
+}
+
+if ($universityFundingRequested !== 'yes' && $universityFundingRequested !== 'no') {
+    echo json_encode(['success' => false, 'message' => 'Indicate whether university funding is being requested (Yes or No).']);
     exit;
 }
 
@@ -236,11 +297,24 @@ if (count($supportSel) === 0 && $supportOther === '') {
     exit;
 }
 
-$needsFundingDetail = ($totalEstimatedAmount !== '');
+$publicity = array_values(array_filter($publicity, function ($k) use ($allowedPub) {
+    return in_array($k, $allowedPub, true);
+}));
+if (count($publicity) === 0) {
+    echo json_encode(['success' => false, 'message' => 'Select at least one publicity / coverage option (or N/A).']);
+    exit;
+}
+
+if ($totalEstimatedAmount === '') {
+    echo json_encode(['success' => false, 'message' => 'Total estimated amount is required (enter 0 if not applicable).']);
+    exit;
+}
+
+$needsFundingDetail = ($universityFundingRequested === 'yes');
 
 if ($needsFundingDetail) {
     if (!isset($fundChargedSet[$fundingChargedTo])) {
-        echo json_encode(['success' => false, 'message' => 'Funding charged to is required when an estimated amount is provided.']);
+        echo json_encode(['success' => false, 'message' => 'Funding charged to is required when university funding is requested.']);
         exit;
     }
     if ($fundingSpecifier === '__other__') {
@@ -261,13 +335,9 @@ if ($needsFundingDetail) {
         exit;
     }
 } else {
-    $fundingSpecifierDisplay = $fundingSpecifier === '__other__' ? $fundingSpecifierOther : $fundingSpecifier;
-    if ($fundingSpecifier !== '' && $fundingSpecifier !== '__other__' && !isset($specSet[$fundingSpecifier])) {
-        $fundingSpecifierDisplay = '';
-    }
-    if ($fundingSpecifier === '__other__' && $fundingSpecifierOther !== '') {
-        $fundingSpecifierDisplay = $fundingSpecifierOther;
-    }
+    $fundingChargedTo = '';
+    $fundingSpecifierDisplay = null;
+    $endorserFundAvailability = '';
 }
 
 $fundAvailabilityTargetUserId = null;
@@ -281,6 +351,20 @@ if ($needsFundingDetail) {
         exit;
     }
 }
+
+$draftFormForVenue = [
+    'activity_campus' => $activityCampus,
+    'activity_campus_other' => $activityCampusOther,
+    'venue_site' => $venueSite,
+    'venue_site_other' => $venueSiteOther,
+];
+$venueDisplay = ntarf_compose_venue_display_line($draftFormForVenue);
+
+$typeOfInvolvementDisplay = ntarf_format_involvement_display([
+    'involvement_types' => $involvementTypesFiltered,
+    'involvement_other' => $involvementOther,
+    'type_of_involvement' => '',
+], $opts);
 
 $uploader = new FileUploader();
 $allowedTypes = ALLOWED_FILE_TYPES;
@@ -324,6 +408,9 @@ try {
     if (!empty($_FILES['supporting_documents']['name'])) {
         $addFiles($_FILES['supporting_documents'], 'supporting', 10);
     }
+    if (!empty($_FILES['lib_file']['name'])) {
+        $addFiles($_FILES['lib_file'], 'lib', 5);
+    }
 } catch (RuntimeException $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     exit;
@@ -339,7 +426,11 @@ $formData = [
     'activity_requested' => $activityRequested,
     'main_organizer' => $mainOrganizer,
     'justification' => $justification,
-    'venue' => $venue,
+    'activity_campus' => $activityCampus,
+    'activity_campus_other' => $activityCampusOther !== '' ? $activityCampusOther : null,
+    'venue_site' => $venueSite,
+    'venue_site_other' => $venueSiteOther !== '' ? $venueSiteOther : null,
+    'venue' => $venueDisplay,
     'date_activity_start' => $dateActivityStart,
     'date_activity_end' => $dateActivityEnd,
     'time_activity_start' => $timeActivityStart,
@@ -347,15 +438,22 @@ $formData = [
     'involved_wpu_personnel' => $involvedPersonnelText,
     'involved_personnel_user_ids' => $involvedUserIds,
     'involved_personnel_other' => $personsOther !== '' ? $personsOther : null,
-    'type_of_involvement' => $typeOfInvolvement,
+    'involvement_types' => $involvementTypesFiltered,
+    'involvement_other' => $involvementOther !== '' ? $involvementOther : null,
+    'type_of_involvement' => $typeOfInvolvementDisplay,
+    'publicity' => $publicity,
+    'publicity_other' => $publicityOther !== '' ? $publicityOther : null,
     'ntarf_support' => $supportSel,
     'ntarf_support_other' => $supportOther,
     'applicable_endorser' => $applicableEndorser,
+    'endorser_venue_availability' => $endorserVenueAvailability,
+    'endorser_electricity' => $endorserElectricity,
     'supervisor_email' => $supervisorEmail,
+    'university_funding_requested' => $universityFundingRequested,
     'funding_charged_to' => $needsFundingDetail ? $fundingChargedTo : null,
-    'funding_specifier' => $needsFundingDetail ? $fundingSpecifierDisplay : ($fundingSpecifierDisplay !== '' ? $fundingSpecifierDisplay : null),
+    'funding_specifier' => $needsFundingDetail ? $fundingSpecifierDisplay : null,
     'endorser_fund_availability' => $needsFundingDetail ? $endorserFundAvailability : null,
-    'total_estimated_amount' => $needsFundingDetail ? $totalEstimatedAmount : ($totalEstimatedAmount !== '' ? $totalEstimatedAmount : null),
+    'total_estimated_amount' => $totalEstimatedAmount,
     'submitted_at_server' => date('Y-m-d H:i:s'),
 ];
 

@@ -687,7 +687,8 @@ include_navigation();
                 <div class="card shadow-sm mb-5 border-primary border-opacity-25">
                     <div class="card-body">
                         <div class="alert alert-info mb-4" role="status">
-                            <strong>Time entry required.</strong> NTARF covers a non-travel, on-site activity. The requester and every person listed as involved must complete the usual timekeeper sequence—<strong>time in</strong>, <strong>lunch out</strong>, <strong>lunch in</strong>, and <strong>time out</strong>—on each day covered by the activity dates. Submitting this form does not replace DTR logging.
+                            <p class="mb-2"><strong>One form per activity.</strong> Please file one NTARF per discrete activity, session, venue, or period of time.</p>
+                            <p class="mb-0"><strong>Time entry required.</strong> Everyone listed must complete time in, lunch out, lunch in, and time out at the timekeeper on each activity day. This approval does not replace DTR logging.</p>
                         </div>
                         <form id="ntarfForm" method="post" action="<?php echo htmlspecialchars(clean_url($basePath . '/faculty/ntarf_request_submit_api.php', $basePath), ENT_QUOTES, 'UTF-8'); ?>" enctype="multipart/form-data" class="tarf-form">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfPageToken, ENT_QUOTES, 'UTF-8'); ?>">
@@ -696,12 +697,12 @@ include_navigation();
                                 <h2>Requester</h2>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Name of requester <span class="text-danger">*</span></label>
-                                        <input type="text" name="requester_name" class="form-control" required value="<?php echo htmlspecialchars($defaultName, ENT_QUOTES, 'UTF-8'); ?>">
-                                    </div>
-                                    <div class="col-md-6">
                                         <label class="form-label">Email <span class="text-danger">*</span></label>
                                         <input type="email" name="requester_email" class="form-control" required value="<?php echo htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8'); ?>">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Name of requester <span class="text-danger">*</span></label>
+                                        <input type="text" name="requester_name" class="form-control" required value="<?php echo htmlspecialchars($defaultName, ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">College / Office / Project <span class="text-danger">*</span></label>
@@ -718,23 +719,43 @@ include_navigation();
                             </div>
 
                             <div class="tarf-section">
-                                <h2>Activity details</h2>
+                                <h2>Details of activity</h2>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label">Activity requested <span class="text-danger">*</span></label>
-                                        <textarea name="activity_requested" class="form-control" rows="3" required placeholder="Title or nature of the activity, program, etc."></textarea>
+                                        <div class="form-text">For multiple applications for the same event, add a number at the beginning (e.g. Session 1). State the title of the program, project, activity, training, or conference.</div>
+                                        <textarea name="activity_requested" class="form-control" rows="3" required placeholder="e.g. Session 3 – Skills Training on Banana Chips Processing…"></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Justification / explanation <span class="text-danger">*</span></label>
+                                        <textarea name="justification" class="form-control" rows="3" required placeholder="e.g. College activity for student development; invitation from PCSD; paper accepted for presentation…"></textarea>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Main organizer <span class="text-danger">*</span></label>
                                         <input type="text" name="main_organizer" class="form-control" required placeholder="Person or unit organizing the activity">
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label">Justification / explanation <span class="text-danger">*</span></label>
-                                        <textarea name="justification" class="form-control" rows="3" required></textarea>
+                                        <label class="form-label">Which campus will serve as the venue? <span class="text-danger">*</span></label>
+                                        <div class="form-text">If the activity is outside any campus, select OUTSIDE THE CAMPUS and specify the exact location below.</div>
+                                        <select name="activity_campus" id="nw_activity_campus" class="form-select" required>
+                                            <option value="">— Select —</option>
+                                            <?php foreach ($ntarfOpts['activity_campuses'] as $ac): ?>
+                                                <option value="<?php echo htmlspecialchars($ac, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($ac, ENT_QUOTES, 'UTF-8'); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <input type="text" name="activity_campus_other" id="nw_activity_campus_other" class="form-control mt-2 d-none" placeholder="Exact off-campus location (required if outside the campus)">
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Venue <span class="text-danger">*</span></label>
-                                        <textarea name="venue" class="form-control" rows="2" required placeholder="Building, room, or location"></textarea>
+                                        <div class="form-text">This form is for <strong>one</strong> venue only; file a separate NTARF for each location. For videoconference, select ZOOM, GOOGLE MEET, or ONLINE as appropriate.</div>
+                                        <select name="venue_site" id="nw_venue_site" class="form-select" required>
+                                            <option value="">— Select —</option>
+                                            <?php foreach ($ntarfOpts['venue_sites'] as $vs): ?>
+                                                <option value="<?php echo htmlspecialchars($vs, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($vs, ENT_QUOTES, 'UTF-8'); ?></option>
+                                            <?php endforeach; ?>
+                                            <option value="__other__">Other (specify below)</option>
+                                        </select>
+                                        <input type="text" name="venue_site_other" id="nw_venue_site_other" class="form-control mt-2 d-none" placeholder="Specify exact venue">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Date of activity (start) <span class="text-danger">*</span></label>
@@ -754,7 +775,7 @@ include_navigation();
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Involved WPU personnel (position) <span class="text-danger">*</span></label>
-                                        <p class="small text-muted mb-2">Select employees from the directory, or add names under Additional involved personnel.</p>
+                                        <p class="small text-muted mb-2">e.g. Dr. Sam Paul Neim (CPAM Dean). Select from the directory and/or add lines below.</p>
                                         <?php if (empty($travelPersonRows)): ?>
                                             <div class="alert alert-warning py-2 mb-2">No directory entries loaded. Enter personnel under Additional involved personnel only.</div>
                                         <?php else: ?>
@@ -784,17 +805,56 @@ include_navigation();
                                             </div>
                                         </div>
                                         <?php endif; ?>
-                                        <label class="form-label small text-muted">Additional involved personnel <span class="text-muted fw-normal">(optional)</span></label>
+                                        <label class="form-label small text-muted">Additional involved personnel</label>
                                         <textarea name="involved_personnel_other" class="form-control" rows="2" placeholder="One per line if not in directory"></textarea>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Type of involvement <span class="text-danger">*</span></label>
-                                        <textarea name="type_of_involvement" class="form-control" rows="2" required placeholder="e.g. participant, speaker, facilitator"></textarea>
+                                        <div class="form-text">Check all that apply.</div>
+                                        <?php foreach ($ntarfOpts['involvement_types'] as $ik => $ilab): ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="involvement_types[]" value="<?php echo htmlspecialchars($ik, ENT_QUOTES, 'UTF-8'); ?>" id="ninv_<?php echo htmlspecialchars($ik, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <label class="form-check-label" for="ninv_<?php echo htmlspecialchars($ik, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($ilab, ENT_QUOTES, 'UTF-8'); ?></label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        <input type="text" name="involvement_other" class="form-control mt-2" placeholder="Other type of involvement (optional)">
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label">Supporting documents (optional)</label>
+                                        <label class="form-label">Supporting documents for approval (optional)</label>
                                         <input type="file" name="supporting_documents[]" class="form-control" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                                        <div class="form-text">PDF, Word, or images. Up to 10 files.</div>
+                                        <div class="form-text">e.g. invitation, letter of acceptance. PDF, Word, or images. Up to 10 files.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tarf-section">
+                                <h2>Requested support</h2>
+                                <p class="small text-muted mb-0">Check all that apply. For renting chairs, tables, etc., choose the fee option and give particulars under Other (e.g. With Fees – 50 chairs, 10 tables).</p>
+                                <div class="row g-3 mt-1">
+                                    <div class="col-12">
+                                        <?php foreach ($ntarfOpts['requested_support'] as $val => $lab): ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="ntarf_support[]" value="<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>" id="ns_<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <label class="form-check-label" for="ns_<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lab, ENT_QUOTES, 'UTF-8'); ?></label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        <textarea name="ntarf_support_other" class="form-control mt-2" rows="2" placeholder="Other requested support (required only if no box above applies)"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tarf-section">
+                                <h2>Support requested</h2>
+                                <p class="small text-muted">Check all that apply.</p>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <?php foreach ($ntarfOpts['publicity_support'] as $val => $lab): ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="publicity[]" value="<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>" id="ntpub_<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <label class="form-check-label" for="ntpub_<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lab, ENT_QUOTES, 'UTF-8'); ?></label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        <input type="text" name="publicity_other" class="form-control mt-2" placeholder="Other support requested (optional)">
                                     </div>
                                 </div>
                             </div>
@@ -812,64 +872,84 @@ include_navigation();
                                         </select>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label">Email of immediate supervisor or college/office/campus/project email <span class="text-danger">*</span></label>
-                                        <input type="email" name="supervisor_email" class="form-control" required placeholder="e.g. unit@wpu.edu.ph">
+                                        <label class="form-label">Endorser for venue availability <span class="text-danger">*</span></label>
+                                        <select name="endorser_venue_availability" id="nw_endorser_venue" class="form-select" required>
+                                            <option value="">— Select —</option>
+                                            <?php foreach ($ntarfOpts['endorser_venue_availability'] as $ev): ?>
+                                                <option value="<?php echo htmlspecialchars($ev, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($ev, ENT_QUOTES, 'UTF-8'); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="tarf-section">
-                                <h2>Requested support</h2>
-                                <p class="small text-muted">Check all that apply.</p>
-                                <div class="row g-3">
                                     <div class="col-12">
-                                        <?php foreach ($ntarfOpts['requested_support'] as $val => $lab): ?>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="ntarf_support[]" value="<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>" id="ns_<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>">
-                                                <label class="form-check-label" for="ns_<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lab, ENT_QUOTES, 'UTF-8'); ?></label>
-                                            </div>
-                                        <?php endforeach; ?>
-                                        <textarea name="ntarf_support_other" class="form-control mt-2" rows="2" placeholder="Other support (optional)"></textarea>
+                                        <label class="form-label">Email of immediate supervisor <em>or</em> college / office / campus / project email <span class="text-danger">*</span></label>
+                                        <input type="email" name="supervisor_email" class="form-control" required placeholder="e.g. cpam@wpu.edu.ph">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Endorser for electricity and generator use <span class="text-danger">*</span></label>
+                                        <select name="endorser_electricity" id="nw_endorser_electricity" class="form-select" required>
+                                            <option value="">— Select —</option>
+                                            <?php foreach ($ntarfOpts['endorser_electricity'] as $ee): ?>
+                                                <option value="<?php echo htmlspecialchars($ee, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($ee, ENT_QUOTES, 'UTF-8'); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="tarf-section border rounded p-3 bg-light" id="ntarfFundingBlock">
                                 <h2 class="border-0">Funding</h2>
-                                <p class="small text-muted">Complete this section if you enter a total estimated amount.</p>
                                 <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Total estimated amount <span class="ntarf-fund-req text-danger d-none" aria-hidden="true">*</span></label>
-                                        <input type="text" name="total_estimated_amount" id="ntarf_total_estimated_amount" class="form-control" placeholder="Leave blank if not applicable">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Funding charged to <span class="ntarf-fund-req text-danger d-none" aria-hidden="true">*</span></label>
-                                        <select name="funding_charged_to" id="ntarf_funding_charged_to" class="form-select">
-                                            <option value="">—</option>
-                                            <?php foreach ($ntarfOpts['funding_charged'] as $f): ?>
-                                                <option value="<?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Funding specifier <span class="ntarf-fund-req text-danger d-none" aria-hidden="true">*</span></label>
-                                        <select name="funding_specifier" id="ntarf_funding_specifier" class="form-select">
-                                            <option value="">—</option>
-                                            <?php foreach ($ntarfOpts['funding_specifiers'] as $f): ?>
-                                                <option value="<?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?></option>
-                                            <?php endforeach; ?>
-                                            <option value="__other__">Other (specify)</option>
-                                        </select>
-                                        <input type="text" name="funding_specifier_other" id="ntarf_funding_specifier_other" class="form-control mt-2 d-none" placeholder="Project name or funding institution">
-                                    </div>
                                     <div class="col-12">
-                                        <label class="form-label">Endorser for fund availability <span class="ntarf-fund-req text-danger d-none" aria-hidden="true">*</span></label>
-                                        <select name="endorser_fund_availability" id="ntarf_endorser_fund_availability" class="form-select">
-                                            <option value="">— Select Budget or Accounting —</option>
-                                            <?php foreach ($ntarfOpts['fund_endorser_role'] as $val => $lab): ?>
-                                                <option value="<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lab, ENT_QUOTES, 'UTF-8'); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                        <label class="form-label">Is university funding being requested? <span class="text-danger">*</span></label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="university_funding_requested" value="yes" id="ntarf_uf_yes" required>
+                                            <label class="form-check-label" for="ntarf_uf_yes">Yes</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="university_funding_requested" value="no" id="ntarf_uf_no">
+                                            <label class="form-check-label" for="ntarf_uf_no">No</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 d-none" id="ntarfFundDetails">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Funding charged to <span class="ntarf-fund-req text-danger">*</span></label>
+                                                <select name="funding_charged_to" id="ntarf_funding_charged_to" class="form-select">
+                                                    <option value="">—</option>
+                                                    <?php foreach ($ntarfOpts['funding_charged'] as $f): ?>
+                                                        <option value="<?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Funding specifier <span class="ntarf-fund-req text-danger">*</span></label>
+                                                <select name="funding_specifier" id="ntarf_funding_specifier" class="form-select">
+                                                    <option value="">—</option>
+                                                    <?php foreach ($ntarfOpts['funding_specifiers'] as $f): ?>
+                                                        <option value="<?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($f, ENT_QUOTES, 'UTF-8'); ?></option>
+                                                    <?php endforeach; ?>
+                                                    <option value="__other__">Other (specify)</option>
+                                                </select>
+                                                <input type="text" name="funding_specifier_other" id="ntarf_funding_specifier_other" class="form-control mt-2 d-none" placeholder="Project name or funding institution">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Endorser for fund availability <span class="ntarf-fund-req text-danger">*</span></label>
+                                                <select name="endorser_fund_availability" id="ntarf_endorser_fund_availability" class="form-select">
+                                                    <option value="">— Select Budget or Accounting —</option>
+                                                    <?php foreach ($ntarfOpts['fund_endorser_role'] as $val => $lab): ?>
+                                                        <option value="<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lab, ENT_QUOTES, 'UTF-8'); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Line item budget (LIB) for budgetary requirements (optional)</label>
+                                                <input type="file" name="lib_file[]" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Total estimated amount <span class="text-danger">*</span></label>
+                                        <input type="text" name="total_estimated_amount" id="ntarf_total_estimated_amount" class="form-control" required placeholder="e.g. 15000 or 0 if none">
                                     </div>
                                 </div>
                             </div>
@@ -1063,38 +1143,62 @@ include_navigation();
             nc.addEventListener('change', syncNtarfCollege);
             syncNtarfCollege();
         }
-        function syncNtarfFunding() {
-            var amtEl = document.getElementById('ntarf_total_estimated_amount');
-            var needs = amtEl && (amtEl.value || '').trim() !== '';
+        var nwCamp = document.getElementById('nw_activity_campus');
+        var nwCampO = document.getElementById('nw_activity_campus_other');
+        if (nwCamp && nwCampO) {
+            function syncNwCamp() {
+                var out = nwCamp.value === 'OUTSIDE THE CAMPUS';
+                nwCampO.classList.toggle('d-none', !out);
+                nwCampO.required = out;
+            }
+            nwCamp.addEventListener('change', syncNwCamp);
+            syncNwCamp();
+        }
+        var nwVs = document.getElementById('nw_venue_site');
+        var nwVsO = document.getElementById('nw_venue_site_other');
+        if (nwVs && nwVsO) {
+            function syncNwVenue() {
+                var o = nwVs.value === '__other__';
+                nwVsO.classList.toggle('d-none', !o);
+                nwVsO.required = o;
+            }
+            nwVs.addEventListener('change', syncNwVenue);
+            syncNwVenue();
+        }
+        function syncNtarfUniversityFunding() {
+            var yes = document.querySelector('#ntarfForm input[name="university_funding_requested"]:checked');
+            var isYes = yes && yes.value === 'yes';
+            var fd = document.getElementById('ntarfFundDetails');
+            if (fd) {
+                fd.classList.toggle('d-none', !isYes);
+            }
             document.querySelectorAll('.ntarf-fund-req').forEach(function(el) {
-                el.classList.toggle('d-none', !needs);
+                el.classList.toggle('d-none', !isYes);
             });
             var fc = document.getElementById('ntarf_funding_charged_to');
             var fsEl = document.getElementById('ntarf_funding_specifier');
             var fsoEl = document.getElementById('ntarf_funding_specifier_other');
             var efa = document.getElementById('ntarf_endorser_fund_availability');
-            if (fc) fc.required = needs;
-            if (fsEl) fsEl.required = needs;
-            if (efa) efa.required = needs;
-            if (fsoEl) fsoEl.required = needs && fsEl && fsEl.value === '__other__';
+            if (fc) fc.required = isYes;
+            if (fsEl) fsEl.required = isYes;
+            if (efa) efa.required = isYes;
+            if (fsoEl) fsoEl.required = isYes && fsEl && fsEl.value === '__other__';
         }
+        document.querySelectorAll('#ntarfForm input[name="university_funding_requested"]').forEach(function(r) {
+            r.addEventListener('change', syncNtarfUniversityFunding);
+        });
         var nfs = document.getElementById('ntarf_funding_specifier');
         var nfso = document.getElementById('ntarf_funding_specifier_other');
         if (nfs && nfso) {
             function syncNfs() {
                 var on = nfs.value === '__other__';
                 nfso.classList.toggle('d-none', !on);
-                syncNtarfFunding();
+                syncNtarfUniversityFunding();
             }
             nfs.addEventListener('change', syncNfs);
             syncNfs();
         }
-        var ntarfAmt = document.getElementById('ntarf_total_estimated_amount');
-        if (ntarfAmt) {
-            ntarfAmt.addEventListener('input', syncNtarfFunding);
-            ntarfAmt.addEventListener('change', syncNtarfFunding);
-        }
-        syncNtarfFunding();
+        syncNtarfUniversityFunding();
         var npickSearch = document.getElementById('ntarfTravelPickSearch');
         var npickList = document.getElementById('ntarfTravelPickList');
         if (npickSearch && npickList) {
@@ -1111,6 +1215,29 @@ include_navigation();
             ntarfForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 var btn = document.getElementById('ntarfSubmitBtn');
+                if (ntarfForm.querySelectorAll('input[name="publicity[]"]:checked').length === 0) {
+                    showToast('Select at least one support requested option (or N/A).', false);
+                    return;
+                }
+                if (ntarfForm.querySelectorAll('input[name="ntarf_support[]"]:checked').length === 0) {
+                    var so = ntarfForm.querySelector('[name="ntarf_support_other"]');
+                    if (!so || !(so.value || '').trim()) {
+                        showToast('Select at least one requested support option or describe other support.', false);
+                        return;
+                    }
+                }
+                if (ntarfForm.querySelectorAll('input[name="involvement_types[]"]:checked').length === 0) {
+                    var io = ntarfForm.querySelector('[name="involvement_other"]');
+                    if (!io || !(io.value || '').trim()) {
+                        showToast('Select at least one type of involvement or describe other.', false);
+                        return;
+                    }
+                }
+                var uf = ntarfForm.querySelector('input[name="university_funding_requested"]:checked');
+                if (!uf) {
+                    showToast('Indicate whether university funding is being requested.', false);
+                    return;
+                }
                 if (btn) { btn.disabled = true; }
                 var fd = new FormData(ntarfForm);
                 fetch(ntarfForm.action, { method: 'POST', body: fd, credentials: 'same-origin' })

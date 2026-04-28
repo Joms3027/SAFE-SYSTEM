@@ -24,7 +24,11 @@
  * @var bool $disappShowOfficialFormLink when true (endorsed), show link to official blank Word form
  * @var string|null $filledOfficialOrderHref download URL for filled official form PDF (endorsed)
  * @var string|null $filledOfficialOrderLabel anchor text for filled PDF
- * @var string $officeOrderSectionHtml OFFICE ORDER block (non-travel narrative)
+ * @var string $ntarfCampusCell activity campus (and off-campus detail)
+ * @var string $ntarfVenueCell composed venue / room
+ * @var string $ntarfTypeInvolvementCell involvement labels
+ * @var string $ntarfEndorserVenueCell venue availability selection
+ * @var string $ntarfEndorserElectricCell electricity / generator selection
  */
 $disappHeaderSrc = function_exists('asset_url') ? asset_url('tarf_disapp_header.png', true) : 'assets/tarf_disapp_header.png';
 $presidentApprovedEsig = !empty($row['president_endorsed_by']);
@@ -58,16 +62,20 @@ $pdfExport = !empty($GLOBALS['tarf_disapp_pdf_export']);
                     <td><?php echo nl2br(tarf_disapp_escape($form['activity_requested'] ?? '')); ?></td>
                 </tr>
                 <tr>
-                    <td class="lbl" colspan="2">Main Organizer</td>
-                    <td><?php echo nl2br(tarf_disapp_escape($form['main_organizer'] ?? '')); ?></td>
-                </tr>
-                <tr>
                     <td class="lbl" colspan="2">Justification/Explanation</td>
                     <td><?php echo nl2br(tarf_disapp_escape($form['justification'] ?? '')); ?></td>
                 </tr>
                 <tr>
+                    <td class="lbl" colspan="2">Main Organizer</td>
+                    <td><?php echo nl2br(tarf_disapp_escape($form['main_organizer'] ?? '')); ?></td>
+                </tr>
+                <tr>
+                    <td class="lbl" colspan="2">Campus (venue location)</td>
+                    <td><?php echo nl2br(tarf_disapp_escape($ntarfCampusCell)); ?></td>
+                </tr>
+                <tr>
                     <td class="lbl" colspan="2">Venue</td>
-                    <td><?php echo nl2br(tarf_disapp_escape($form['venue'] ?? '')); ?></td>
+                    <td><?php echo nl2br(tarf_disapp_escape($ntarfVenueCell)); ?></td>
                 </tr>
                 <tr>
                     <td class="lbl" colspan="2">Date &amp; Time of Activity</td>
@@ -79,7 +87,7 @@ $pdfExport = !empty($GLOBALS['tarf_disapp_pdf_export']);
                 </tr>
                 <tr>
                     <td class="lbl" colspan="2">Type of Involvement</td>
-                    <td><?php echo nl2br(tarf_disapp_escape($form['type_of_involvement'] ?? '')); ?></td>
+                    <td><?php echo nl2br(tarf_disapp_escape($ntarfTypeInvolvementCell)); ?></td>
                 </tr>
                 <tr class="disapp-thick-sep">
                     <td class="lbl" colspan="2">Requested Support</td>
@@ -133,12 +141,12 @@ $pdfExport = !empty($GLOBALS['tarf_disapp_pdf_export']);
                     <td>
                         <div class="sub">(Endorsed through NTARF System)</div>
                         <div class="sub ntarf-endorse-hint">Endorser for Venue Availability</div>
-                        <div class="name-line">—</div>
+                        <div class="name-line"><?php echo tarf_disapp_escape($ntarfEndorserVenueCell); ?></div>
                     </td>
                     <td>
                         <div class="sub">(Endorsed through NTARF System)</div>
                         <div class="sub ntarf-endorse-hint">Endorser for Electricity and Generator Use</div>
-                        <div class="name-line">—</div>
+                        <div class="name-line"><?php echo tarf_disapp_escape($ntarfEndorserElectricCell); ?></div>
                     </td>
                 </tr>
                 <tr class="endorse-roles">

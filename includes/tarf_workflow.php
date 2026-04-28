@@ -109,9 +109,17 @@ if (!function_exists('tarf_request_requires_fund_availability_endorsement')) {
         }
         $fk = $form['form_kind'] ?? 'tarf';
         if ($fk === 'ntarf') {
+            require_once __DIR__ . '/ntarf_form_options.php';
+            $uf = strtolower(trim((string) ($form['university_funding_requested'] ?? '')));
+            if ($uf === 'yes') {
+                return !empty($form['endorser_fund_availability']);
+            }
+            if ($uf === 'no') {
+                return false;
+            }
             $amt = trim((string) ($form['total_estimated_amount'] ?? ''));
 
-            return $amt !== '' && !empty($form['endorser_fund_availability']);
+            return ntarf_total_amount_requires_funding_detail($amt) && !empty($form['endorser_fund_availability']);
         }
         $trt = $form['travel_request_type'] ?? '';
         $uf = $form['university_funding_requested'] ?? '';

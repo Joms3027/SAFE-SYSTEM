@@ -286,7 +286,7 @@ if (!function_exists('tarf_ntarf_docx_status_notes')) {
         }
         $notesApprover = $apLines !== [] ? implode("\n\n", $apLines) : $dash;
 
-        $venueText = trim((string) ($form['venue'] ?? ''));
+        $venueText = trim(ntarf_compose_venue_display_line($form));
         $notesVenuePmes = $venueText !== ''
             ? 'Venue (from request): ' . $venueText . "\n\nPMES / facility system notes: " . $dash
             : 'Venue (from request): ' . $dash . "\n\nPMES / facility system notes: " . $dash;
@@ -315,15 +315,7 @@ if (!function_exists('tarf_ntarf_all_docx_entity_values')) {
         $dash = tarf_official_order_nonempty(null);
         $notes = tarf_ntarf_docx_status_notes($db, $row, $form);
 
-        $supportLines = [];
-        foreach ($form['ntarf_support'] ?? [] as $k) {
-            if (isset($opts['requested_support'][$k])) {
-                $supportLines[] = $opts['requested_support'][$k];
-            }
-        }
-        if (!empty($form['ntarf_support_other'])) {
-            $supportLines[] = 'Other: ' . trim((string) $form['ntarf_support_other']);
-        }
+        $supportLines = ntarf_ntarf_support_display_lines($form, $opts);
         $supportText = $supportLines !== [] ? implode("\n", $supportLines) : $dash;
 
         $filedTs = !empty($form['submitted_at_server'])
@@ -352,7 +344,7 @@ if (!function_exists('tarf_ntarf_all_docx_entity_values')) {
         $dateEnd = tarf_official_order_nonempty($form['date_activity_end'] ?? null);
         $timeStart = tarf_official_order_nonempty($form['time_activity_start'] ?? null);
         $timeEnd = tarf_official_order_nonempty($form['time_activity_end'] ?? null);
-        $typeInv = tarf_official_order_nonempty($form['type_of_involvement'] ?? null);
+        $typeInv = tarf_official_order_nonempty(ntarf_format_involvement_display($form, $opts) ?: null);
         $actReq = tarf_official_order_nonempty($form['activity_requested'] ?? null);
 
         $fundingCharged = !empty($form['funding_charged_to'])
@@ -360,6 +352,9 @@ if (!function_exists('tarf_ntarf_all_docx_entity_values')) {
         $fundingSpec = tarf_official_order_nonempty($form['funding_specifier'] ?? null);
         $totalAmt = isset($form['total_estimated_amount']) && $form['total_estimated_amount'] !== ''
             ? (string) $form['total_estimated_amount'] : $dash;
+        $venueLine = tarf_official_order_nonempty(ntarf_compose_venue_display_line($form) ?: null);
+        $endorseVenue = tarf_official_order_nonempty($form['endorser_venue_availability'] ?? null);
+        $endorseElectric = tarf_official_order_nonempty($form['endorser_electricity'] ?? null);
 
         return [
             '&lt;&lt;Name of Requester&gt;&gt;' => tarf_official_order_nonempty($form['requester_name'] ?? null),
@@ -367,7 +362,7 @@ if (!function_exists('tarf_ntarf_all_docx_entity_values')) {
             '&lt;&lt;Timestamp&gt;&gt;' => $filedTs,
             '&lt;&lt;Main Organizer&gt;&gt;' => tarf_official_order_nonempty($form['main_organizer'] ?? null),
             '&lt;&lt;Justification/Explanation&gt;&gt;' => tarf_official_order_nonempty($form['justification'] ?? null),
-            '&lt;&lt;Venue&gt;&gt;' => tarf_official_order_nonempty($form['venue'] ?? null),
+            '&lt;&lt;Venue&gt;&gt;' => $venueLine,
             '&lt;&lt;Involved WPU Personnel (Position)&gt;&gt;' => tarf_official_order_nonempty($form['involved_wpu_personnel'] ?? null),
             '&lt;&lt;Requested Support (Check all that apply)&gt;&gt;' => $supportText,
             '&lt;&lt;Funding Charged to&gt;&gt;' => $fundingCharged,
@@ -375,8 +370,8 @@ if (!function_exists('tarf_ntarf_all_docx_entity_values')) {
             '&lt;&lt;Fund Availability Certified By&gt;&gt;' => $notes['fund_cert'],
             '&lt;&lt;Total Estimated Amount&gt;&gt;' => $totalAmt,
             '&lt;&lt;Applicable Endorser\'s Name&gt;&gt;' => $applicableLine,
-            '&lt;&lt;Endorser for Venue Availability&gt;&gt;' => $dash,
-            '&lt;&lt;Endorser for Electricity and Generator Use&gt;&gt;' => $dash,
+            '&lt;&lt;Endorser for Venue Availability&gt;&gt;' => $endorseVenue,
+            '&lt;&lt;Endorser for Electricity and Generator Use&gt;&gt;' => $endorseElectric,
             '&lt;&lt;Notes from Approver or Endorser&gt;&gt;' => $notes['approver'],
             '&lt;&lt;Notes re Fund Availability&gt;&gt;' => $notes['fund'],
             '&lt;&lt;Venue or PMES Notes&gt;&gt;' => $notes['venue_pmes'],
@@ -478,7 +473,12 @@ if (!function_exists('tarf_ntarf_apply_universal_xml_fill')) {
         $dateE = tarf_official_order_nonempty($form['date_activity_end'] ?? null);
         $timeS = tarf_official_order_nonempty($form['time_activity_start'] ?? null);
         $timeE = tarf_official_order_nonempty($form['time_activity_end'] ?? null);
-        $typeInv = tarf_official_order_nonempty($form['type_of_involvement'] ?? null);
+        require_once __DIR__ . '/ntarf_form_options.php';
+        $typeInvPlain = ntarf_format_involvement_display($form, ntarf_get_form_options());
+        if ($typeInvPlain === '') {
+            $typeInvPlain = trim((string) ($form['type_of_involvement'] ?? ''));
+        }
+        $typeInv = tarf_official_order_nonempty($typeInvPlain !== '' ? $typeInvPlain : null);
         $actReq = tarf_official_order_nonempty($form['activity_requested'] ?? null);
 
         $esc = static function (string $s): string {
@@ -1134,7 +1134,12 @@ if (!function_exists('tarf_build_ntarf_official_order_replacements')) {
         $dateAct = tarf_official_order_nonempty($form['date_activity_start'] ?? null);
         $timeStart = tarf_official_order_nonempty($form['time_activity_start'] ?? null);
         $timeEnd = tarf_official_order_nonempty($form['time_activity_end'] ?? null);
-        $typeInv = tarf_official_order_nonempty($form['type_of_involvement'] ?? null);
+        require_once __DIR__ . '/ntarf_form_options.php';
+        $typeInvPlain = ntarf_format_involvement_display($form, ntarf_get_form_options());
+        if ($typeInvPlain === '') {
+            $typeInvPlain = trim((string) ($form['type_of_involvement'] ?? ''));
+        }
+        $typeInv = tarf_official_order_nonempty($typeInvPlain !== '' ? $typeInvPlain : null);
 
         // Word splits some <<placeholders>> across multiple <w:r> runs; replace whole sequences.
         $blocks['<w:t xml:space="preserve"> &lt;&lt;Date of Activity&gt;</w:t></w:r><w:proofErr w:type="gramStart"/><w:r><w:rPr><w:b/><w:bCs/></w:rPr><w:t>&gt;</w:t></w:r><w:r><w:t xml:space="preserve">  TO</w:t></w:r><w:proofErr w:type="gramEnd"/>'] =
