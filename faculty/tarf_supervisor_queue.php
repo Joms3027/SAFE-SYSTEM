@@ -6,6 +6,8 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/database.php';
 require_once __DIR__ . '/../includes/tarf_workflow.php';
+require_once __DIR__ . '/../includes/tarf_queue_filter.php';
+require_once __DIR__ . '/../includes/tarf_endorser_history.php';
 
 requireAuth();
 
@@ -95,7 +97,9 @@ include_navigation();
             <?php elseif (empty($pending)): ?>
                 <div class="card shadow-sm"><div class="card-body text-center text-muted py-5">No pending TARF/NTARF requests for your employees.</div></div>
             <?php else: ?>
-                <div class="table-responsive card shadow-sm">
+                <div class="card shadow-sm">
+                    <?php tarf_queue_filter_bar(); ?>
+                <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
                         <thead class="table-light"><tr><th>ID</th><th>Employee</th><th>Department</th><th>Purpose (summary)</th><th>Submitted</th><th></th></tr></thead>
                         <tbody>
@@ -106,7 +110,7 @@ include_navigation();
                                 $name = trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''));
                                 $viewUrl = clean_url($basePath . '/faculty/tarf_request_view.php?id=' . (int) $r['id'], $basePath);
                                 ?>
-                                <tr>
+                                <tr<?php echo tarf_queue_row_data_attrs($r); ?>>
                                     <td><?php echo (int) $r['id']; ?></td>
                                     <td><?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td><?php echo htmlspecialchars($r['department'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
@@ -121,6 +125,7 @@ include_navigation();
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
                 </div>
             <?php endif; ?>
         </main>
@@ -262,5 +267,7 @@ include_navigation();
         });
     })();
     </script>
+    <?php tarf_queue_filter_script(); ?>
+    <?php tarf_endorser_history_render_fixed_button_and_modal($basePath, 'supervisor'); ?>
 </body>
 </html>

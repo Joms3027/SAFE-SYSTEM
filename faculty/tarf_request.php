@@ -39,7 +39,11 @@ try {
     $tableExists = $tbl && $tbl->rowCount() > 0;
     if ($tableExists) {
         $q = $db->prepare(
-            "SELECT id, serial_year, form_data, created_at, status FROM tarf_requests
+            "SELECT id, serial_year, form_data, created_at, status,
+                    supervisor_endorsed_at, supervisor_endorsed_by,
+                    endorser_endorsed_at, endorser_endorsed_by,
+                    fund_availability_endorsed_at, fund_availability_endorsed_by
+             FROM tarf_requests
              WHERE user_id = ? ORDER BY created_at DESC LIMIT 15"
         );
         $q->execute([$_SESSION['user_id']]);
@@ -64,12 +68,82 @@ foreach ($myRequests as $r) {
     }
 }
 
+if (!function_exists('tarf_my_request_show_parallel_endorse_progress')) {
+    /**
+     * Requester-facing lines for parallel endorsement lanes while the request is still in workflow (before final approval).
+     */
+    function tarf_my_request_show_parallel_endorse_progress(string $statusNorm): bool
+    {
+        return in_array($statusNorm, ['pending_joint', 'pending_supervisor', 'pending_endorser', 'pending_president'], true);
+    }
+}
+
+if (!function_exists('tarf_my_request_render_parallel_endorse_lines')) {
+    /**
+     * @param array<string, mixed> $r Row from tarf_requests including endorsement columns and form_data.
+     */
+    function tarf_my_request_render_parallel_endorse_lines(PDO $db, array $r): void
+    {
+        $st = $r['status'] ?? 'pending_supervisor';
+        if ($st === 'pending') {
+            $st = 'pending_supervisor';
+        }
+        if (!tarf_my_request_show_parallel_endorse_progress($st)) {
+            return;
+        }
+        $needsFund = tarf_request_requires_fund_availability_endorsement($r);
+
+        $supDone = !empty($r['supervisor_endorsed_at']);
+        $endDone = !empty($r['endorser_endorsed_at']);
+        $fundDone = !empty($r['fund_availability_endorsed_at']);
+
+        $supName = $supDone ? tarf_display_name_for_user((int) ($r['supervisor_endorsed_by'] ?? 0), $db) : '';
+        $endName = $endDone ? tarf_display_name_for_user((int) ($r['endorser_endorsed_by'] ?? 0), $db) : '';
+        $fundName = $fundDone ? tarf_display_name_for_user((int) ($r['fund_availability_endorsed_by'] ?? 0), $db) : '';
+
+        $line = static function (bool $done, string $roleLabel, string $name, bool $skipped): void {
+            if ($skipped) {
+                echo '<li class="d-flex flex-wrap align-items-baseline gap-1 mb-1">';
+                echo '<span class="text-muted"><i class="fas fa-minus-circle fa-fw me-1" aria-hidden="true"></i>';
+                echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') . '</span> ';
+                echo '<span class="text-muted">Not required for this form</span>';
+                echo '</li>';
+
+                return;
+            }
+            echo '<li class="d-flex flex-wrap align-items-baseline gap-1 mb-1">';
+            if ($done) {
+                echo '<span class="text-success"><i class="fas fa-check-circle fa-fw me-1" aria-hidden="true"></i>';
+                echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') . '</span> ';
+                $disp = $name !== '' ? $name : 'Endorsed';
+                echo '<span class="text-body">' . htmlspecialchars($disp, ENT_QUOTES, 'UTF-8') . '</span>';
+            } else {
+                echo '<span class="text-muted"><i class="fas fa-hourglass-half fa-fw me-1" aria-hidden="true"></i>';
+                echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') . '</span> ';
+                echo '<span class="text-muted">Awaiting endorsement</span>';
+            }
+            echo '</li>';
+        };
+
+        ?>
+            <div class="tarf-mr-endorse-progress small mt-2 pt-2 border-top border-secondary border-opacity-25">
+                <div class="text-muted fw-semibold mb-1" style="font-size: 0.7rem; letter-spacing: 0.04em;">Parallel endorsements</div>
+                <ul class="list-unstyled mb-0 tarf-mr-endorse-lines">
+                    <?php $line($supDone, 'Supervisor', $supName, false); ?>
+                    <?php $line($endDone, 'Applicable endorser', $endName, false); ?>
+                    <?php $line($fundDone, 'Budget / Accounting', $fundName, !$needsFund); ?>
+                </ul>
+            </div>
+        <?php
+    }
+}
+
 if (!function_exists('tarf_render_my_tarf_list_rows')) {
     /**
      * @param array<int, array<string, mixed>> $rows
      * @param bool $useViewModal If true, "View" opens the DISAPP preview modal (same layout as tarf_request_view.php).
      */
-    function tarf_render_my_tarf_list_rows(array $rows, string $basePath, bool $useViewModal = false): void
+    function tarf_render_my_tarf_list_rows(array $rows, string $basePath, PDO $db, bool $useViewModal = false): void
     {
         $stLabels = [
             'pending_joint' => ['Awaiting endorsements', 'warning'],
@@ -131,6 +205,7 @@ if (!function_exists('tarf_render_my_tarf_list_rows')) {
                                                 <?php endif; ?>
                                             </div>
                                             <p class="tarf-mr-purpose small text-secondary mb-0 text-break" title="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></p>
+                                            <?php tarf_my_request_render_parallel_endorse_lines($db, $r); ?>
                                         </div>
                                         <?php if ($useViewModal): ?>
                                         <button type="button" class="btn btn-sm btn-primary tarf-mr-cta align-self-stretch align-self-sm-center flex-shrink-0 btn-tarf-open-view" data-tarf-id="<?php echo (int) $r['id']; ?>">
@@ -419,13 +494,13 @@ include_navigation();
                                 </div>
                                 <div class="tab-content border-0" id="tarfMyRequestsTabContent">
                                     <div class="tab-pane fade show active" id="tarf-pane-recent" role="tabpanel" aria-labelledby="tarf-tab-recent" tabindex="0">
-                                        <?php tarf_render_my_tarf_list_rows($myRequests, $basePath, true); ?>
+                                        <?php tarf_render_my_tarf_list_rows($myRequests, $basePath, $db, true); ?>
                                     </div>
                                     <div class="tab-pane fade" id="tarf-pane-pending" role="tabpanel" aria-labelledby="tarf-tab-pending" tabindex="0">
-                                        <?php tarf_render_my_tarf_list_rows($myRequestsPending, $basePath, true); ?>
+                                        <?php tarf_render_my_tarf_list_rows($myRequestsPending, $basePath, $db, true); ?>
                                     </div>
                                     <div class="tab-pane fade" id="tarf-pane-rejected" role="tabpanel" aria-labelledby="tarf-tab-rejected" tabindex="0">
-                                        <?php tarf_render_my_tarf_list_rows($myRequestsRejected, $basePath, true); ?>
+                                        <?php tarf_render_my_tarf_list_rows($myRequestsRejected, $basePath, $db, true); ?>
                                     </div>
                                 </div>
                             </div>

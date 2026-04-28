@@ -158,7 +158,7 @@ $pdfExport = !empty($GLOBALS['tarf_disapp_pdf_export']);
             <?php if (!empty($filledOfficialOrderHref) && empty($pdfExport)): ?>
             <div class="disapp-filled-official-form-ref">
                 <strong>Filled official form (from your request)</strong>
-                <p class="mb-0"><a href="<?php echo tarf_disapp_escape($filledOfficialOrderHref); ?>" download><?php echo tarf_disapp_escape($filledOfficialOrderLabel ?? 'Download'); ?></a></p>
+                <p class="mb-0"><a href="<?php echo tarf_disapp_escape($filledOfficialOrderHref); ?>" target="_blank" rel="noopener"><?php echo tarf_disapp_escape($filledOfficialOrderLabel ?? 'Download'); ?></a></p>
             </div>
             <?php endif; ?>
 

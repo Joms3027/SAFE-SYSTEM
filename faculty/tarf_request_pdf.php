@@ -106,5 +106,5 @@ $dompdf = new \Dompdf\Dompdf($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
-$dompdf->stream($suggestedName, ['Attachment' => true]);
+$dompdf->stream($suggestedName, ['Attachment' => false]);
 exit;

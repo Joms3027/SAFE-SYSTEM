@@ -7,6 +7,8 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/database.php';
 require_once __DIR__ . '/../includes/tarf_workflow.php';
+require_once __DIR__ . '/../includes/tarf_queue_filter.php';
+require_once __DIR__ . '/../includes/tarf_endorser_history.php';
 
 requireAuth();
 
@@ -129,7 +131,9 @@ function tarf_president_status_label(string $status): string
             <?php elseif (empty($rows)): ?>
                 <div class="card shadow-sm mt-3"><div class="card-body text-center text-muted py-5">No TARF requests pending final approval yet.</div></div>
             <?php else: ?>
-                <div class="table-responsive card shadow-sm mt-3">
+                <div class="card shadow-sm mt-3">
+                    <?php tarf_queue_filter_bar(); ?>
+                <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
@@ -150,7 +154,7 @@ function tarf_president_status_label(string $status): string
                                 $up = $r['updated_at'] ?? $r['created_at'] ?? '';
                                 $needPresident = ($st === 'pending_president');
                                 ?>
-                                <tr>
+                                <tr<?php echo tarf_queue_row_data_attrs($r); ?>>
                                     <td><?php echo (int) $r['id']; ?></td>
                                     <td><?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td><?php echo htmlspecialchars($r['department'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
@@ -168,6 +172,7 @@ function tarf_president_status_label(string $status): string
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
                 </div>
             <?php endif; ?>
         </main>
@@ -309,5 +314,7 @@ function tarf_president_status_label(string $status): string
         });
     })();
     </script>
+    <?php tarf_queue_filter_script(); ?>
+    <?php tarf_endorser_history_render_fixed_button_and_modal($basePath, 'president'); ?>
 </body>
 </html>
