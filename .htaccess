@@ -47,8 +47,10 @@ Options +FollowSymLinks
     RewriteRule ^ - [L]
     
     # Skip rewrite rules for API files (they need to be accessed directly).
-    # IMPORTANT: Do not 301-strip .php for these — POST + fetch() would become GET and lose the body (Invalid action).
-    RewriteCond %{REQUEST_URI} ^.*/(includes/)?(notifications_api|chat_api|calendar_api)\.php [NC]
+    # IMPORTANT: Do not 301-strip .php for *_api.php — a 301 on POST is converted to GET by
+    # browsers, which silently drops the request body (e.g. submit_dtr_api saw POST become GET
+    # and the GET branch returned success:true without inserting). Match any *_api.php anywhere.
+    RewriteCond %{REQUEST_URI} (^|/)[^/]*_api\.php$ [NC]
     RewriteRule ^ - [L]
     
     # Remove .php extension from URLs (external redirect)
