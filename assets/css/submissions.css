@@ -1,0 +1,410 @@
+/* ==========================================
+   Submissions Page - Filter Section Styles
+   Dedicated stylesheet for submissions page
+   ========================================== */
+
+/* Filter section styling - consolidated */
+.card .card-body .bg-light.border-bottom.px-3.py-2 {
+    height: 80px;
+    min-height: 80px;
+    max-height: 80px;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    overflow: hidden;
+    margin-bottom: 1.5rem; /* Increased spacing to match positions.php better */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important; /* Very subtle border */
+    background-color: #f8f9fa !important; /* Ensure light background */
+}
+
+/* Ensure form fills the container and maintains proper spacing */
+.card .card-body .bg-light.border-bottom.px-3.py-2 form {
+    width: 100%;
+    margin: 0;
+}
+
+/* Reduce gap between form elements */
+.card .card-body .bg-light.border-bottom.px-3.py-2 form.row.g-1 {
+    --bs-gutter-y: 0.2rem;
+    --bs-gutter-x: 0.2rem;
+    margin: 0;
+}
+
+/* Ensure proper alignment of form rows */
+.card .card-body .bg-light.border-bottom.px-3.py-2 form.row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Reduce column padding */
+.card .card-body .bg-light.border-bottom.px-3.py-2 form.row > [class*="col-"] {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+
+/* Compact form labels - reduce margin and font size */
+.card .card-body .bg-light.border-bottom.px-3.py-2 .form-label,
+.card .card-body .bg-light.border-bottom.px-3.py-2 .form-label.mb-1 {
+    margin-bottom: 0.1rem !important;
+    font-size: 0.7rem;
+    line-height: 1.1;
+}
+
+/* Compact form controls */
+.card .card-body .bg-light.border-bottom.px-3.py-2 .form-control-sm,
+.card .card-body .bg-light.border-bottom.px-3.py-2 select.form-control-sm {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    height: calc(1.5em + 0.3rem + 2px);
+    min-height: auto;
+}
+
+/* Compact buttons */
+.card .card-body .bg-light.border-bottom.px-3.py-2 .btn-sm {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* Content wrapper: minimal top padding to account for margin-bottom, keep side/bottom padding */
+.card .card-body .bg-light.border-bottom.px-3.py-2 + .p-4 {
+    padding-top: 0 !important;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-bottom: 1.5rem;
+    margin-top: 0; /* Ensure no extra margin */
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+    .card .card-body .bg-light.border-bottom.px-3.py-2 {
+        height: auto;
+        min-height: auto;
+        max-height: none;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+        overflow: visible;
+        margin-bottom: 1.25rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
+    
+    .card .card-body .bg-light.border-bottom.px-3.py-2 form {
+        gap: 0.5rem;
+    }
+    
+    /* Maintain proper spacing on mobile */
+    .card .card-body .bg-light.border-bottom.px-3.py-2 + .p-4 {
+        padding-top: 0 !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+        margin-top: 0;
+    }
+}
+
+/* ==========================================
+   Submissions Page - My Submissions (faculty/submissions.php)
+   Mobile-first UI for faculty file submissions
+   ========================================== */
+
+.submissions-page .page-header.submissions-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.submissions-page .page-header-actions .btn-submit-requirement {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.submissions-page .submissions-stats {
+    margin-bottom: 1.25rem;
+}
+
+/* Filter chips - horizontal scroll on mobile */
+.submissions-page .submissions-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.submissions-page .submissions-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.submissions-page .filter-chip {
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    min-height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--mobile-border, #e5e7eb);
+    background: var(--mobile-card-bg, #fff);
+    color: var(--mobile-text-secondary, #6b7280);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.submissions-page .filter-chip:hover,
+.submissions-page .filter-chip:focus-visible {
+    border-color: #003366;
+    color: #003366;
+    background: #e6f3ff;
+}
+
+.submissions-page .filter-chip.active {
+    background: #003366;
+    border-color: #003366;
+    color: #fff;
+}
+
+/* Submissions card container */
+.submissions-page .submissions-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.submissions-page .submissions-card-header {
+    padding: 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.submissions-page .submissions-card-header .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.submissions-page .submissions-card .card-body {
+    padding: 1rem;
+}
+
+/* Grid - single column on mobile */
+.submissions-page .submissions-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0;
+}
+
+@media (min-width: 768px) {
+    .submissions-page .submissions-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .submissions-page .submissions-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Submission card - touch friendly */
+.submissions-page .submission-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.submissions-page .submission-card:active {
+    transform: scale(0.99);
+}
+
+.submissions-page .submission-card-hidden {
+    display: none !important;
+}
+
+.submissions-page .submission-header {
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.submissions-page .submission-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+    line-height: 1.4;
+}
+
+.submissions-page .submission-desc {
+    font-size: 0.813rem;
+    color: #6b7280;
+    line-height: 1.4;
+    margin-bottom: 0;
+}
+
+.submissions-page .submission-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.submissions-page .submission-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.submissions-page .submission-item i {
+    color: #6b7280;
+    width: 18px;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.submissions-page .submission-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.submissions-page .submission-item-label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.125rem;
+    font-weight: 500;
+}
+
+.submissions-page .submission-item-value {
+    color: #374151;
+    word-break: break-word;
+}
+
+/* Actions - full width buttons on mobile, min touch target */
+.submissions-page .submission-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f3f4f6;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.submissions-page .submission-actions .btn {
+    min-height: 44px;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (min-width: 480px) {
+    .submissions-page .submission-actions .btn {
+        flex: 0 1 auto;
+    }
+}
+
+/* Empty state */
+.submissions-page .empty-state.submissions-empty {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.submissions-page .empty-state-icon {
+    margin-bottom: 1rem;
+}
+
+.submissions-page .empty-state-icon i {
+    font-size: 3rem;
+    color: #cbd5e1;
+}
+
+.submissions-page .empty-state-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.submissions-page .empty-state-text {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.submissions-page .btn-empty-cta {
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Notes modal - fullscreen on small screens */
+.submissions-page #notesModal.modal .modal-dialog-scrollable .modal-body {
+    max-height: 60vh;
+}
+
+.submissions-page #notesModal .modal-footer .btn-close-notes {
+    min-height: 44px;
+    padding: 0.5rem 1.25rem;
+    touch-action: manipulation;
+}
+
+/* Bottom spacer for safe area / bottom nav */
+.submissions-page .submissions-bottom-spacer {
+    height: 1.5rem;
+}
+
+@media (max-width: 767px) {
+    .submissions-page .main-content {
+        padding-bottom: 2.5rem;
+    }
+    
+    .submissions-page .submissions-bottom-spacer {
+        height: 2rem;
+    }
+    
+    .submissions-page #notesModal .modal-dialog-scrollable .modal-body {
+        max-height: none;
+    }
+}
+
+/* Very small phones: compact header button */
+@media (max-width: 380px) {
+    .submissions-page .btn-submit-requirement .btn-label {
+        display: none;
+    }
+    .submissions-page .btn-submit-requirement .fa-plus {
+        margin-right: 0 !important;
+    }
+}
+

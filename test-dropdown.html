@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootstrap Dropdown Test - Isolated</title>
+    <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 50px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #198754; }
+        .status-error { background: #dc3545; }
+        .status-pending { background: #ffc107; }
+        #console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-success { color: #4ec9b0; }
+        .log-error { color: #f48771; }
+        .log-warning { color: #dcdcaa; }
+        .log-info { color: #9cdcfe; }
+        
+        /* Test dropdown styles matching faculty page */
+        .test-dropdown .dropdown-menu {
+            position: fixed !important;
+            background-color: #fff !important;
+            box-shadow: 0 6px 20px rgba(0,0,0,.18) !important;
+            border: 1px solid rgba(0,0,0,.15) !important;
+            z-index: 1055 !important;
+            transition: none !important;
+            animation: none !important;
+            -webkit-animation: none !important;
+            transform: none !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: block !important;
+            will-change: auto !important;
+        }
+        
+        .test-dropdown .dropdown-menu.show {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            border: 2px solid #ff0000 !important; /* RED BORDER FOR VISIBILITY */
+        }
+        
+        .test-dropdown .dropdown-menu:not(.show) {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="mb-4">Bootstrap Dropdown Diagnostic Test</h1>
+        
+        <div class="test-section">
+            <h3>System Status</h3>
+            <div id="bootstrap-status">
+                <span class="status-indicator status-pending"></span>
+                Checking Bootstrap...
+            </div>
+            <div id="popper-status">
+                <span class="status-indicator status-pending"></span>
+                Checking Popper.js...
+            </div>
+            <div id="fontawesome-status">
+                <span class="status-indicator status-pending"></span>
+                Checking Font Awesome...
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 1: Basic Bootstrap Dropdown</h3>
+            <p class="text-muted">This uses standard Bootstrap dropdown with no customization.</p>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="test1Dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v"></i> Basic Dropdown
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="test1Dropdown">
+                    <li><a class="dropdown-item" href="#">Action</a></li>
+                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                    <li><a class="dropdown-item" href="#">Something else here</a></li>
+                </ul>
+            </div>
+            <div id="test1-result" class="mt-2 small text-muted">Click button to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 2: Dropdown with Fixed Strategy (Faculty Page Style)</h3>
+            <p class="text-muted">This mimics the faculty page dropdown with fixed positioning.</p>
+            <div class="dropdown test-dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="test2Dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v"></i> Actions
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="test2Dropdown">
+                    <li><button type="button" class="dropdown-item"><i class="fas fa-eye me-2"></i>View</button></li>
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                    <li><button type="button" class="dropdown-item"><i class="fas fa-envelope me-2"></i>Resend credentials</button></li>
+                    <li><button type="button" class="dropdown-item"><i class="fas fa-ban me-2"></i>Deactivate</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button type="button" class="dropdown-item text-danger"><i class="fas fa-trash me-2"></i>Delete</button></li>
+                </ul>
+            </div>
+            <div id="test2-result" class="mt-2 small">
+                <strong>Expected:</strong> Red border around dropdown menu<br>
+                <span class="text-muted">Click button to test...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Console Output</h3>
+            <div id="console-output">Waiting for tests...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Instructions</h3>
+            <ol>
+                <li>Check that all system status indicators are <span class="status-indicator status-success"></span> green</li>
+                <li>Click "Basic Dropdown" - a menu should appear below the button</li>
+                <li>Click "Actions" - a menu with a <strong style="color: red;">RED BORDER</strong> should appear</li>
+                <li>If either dropdown fails, check the console output above</li>
+                <li>Take a screenshot of this page showing any failures</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Custom console for output
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToConsole(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = `log-${type}`;
+            consoleOutput.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole('ERROR: ' + args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole('WARNING: ' + args.join(' '), 'warning');
+        };
+        
+        // Check system status
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== BOOTSTRAP DROPDOWN DIAGNOSTIC TEST ===');
+            console.log('Page loaded at: ' + new Date().toISOString());
+            
+            // Check Bootstrap
+            const bootstrapStatus = document.getElementById('bootstrap-status');
+            if (typeof bootstrap !== 'undefined') {
+                bootstrapStatus.innerHTML = '<span class="status-indicator status-success"></span>Bootstrap loaded: v' + (bootstrap.Tooltip.VERSION || '5.x');
+                console.log('✅ Bootstrap version: ' + (bootstrap.Tooltip.VERSION || '5.x'));
+            } else {
+                bootstrapStatus.innerHTML = '<span class="status-indicator status-error"></span>Bootstrap NOT loaded';
+                console.error('❌ Bootstrap is not loaded!');
+            }
+            
+            // Check Popper
+            const popperStatus = document.getElementById('popper-status');
+            if (typeof Popper !== 'undefined') {
+                popperStatus.innerHTML = '<span class="status-indicator status-success"></span>Popper.js loaded';
+                console.log('✅ Popper.js is available');
+            } else {
+                popperStatus.innerHTML = '<span class="status-indicator status-warning"></span>Popper.js (bundled with Bootstrap)';
+                console.log('⚠️ Popper.js is bundled with Bootstrap');
+            }
+            
+            // Check Font Awesome (check if icon renders)
+            const fontawesomeStatus = document.getElementById('fontawesome-status');
+            setTimeout(() => {
+                const icon = document.querySelector('.fa-ellipsis-v');
+                if (icon) {
+                    const computed = window.getComputedStyle(icon);
+                    if (computed.fontFamily.includes('Font Awesome')) {
+                        fontawesomeStatus.innerHTML = '<span class="status-indicator status-success"></span>Font Awesome loaded';
+                        console.log('✅ Font Awesome icons rendering');
+                    } else {
+                        fontawesomeStatus.innerHTML = '<span class="status-indicator status-error"></span>Font Awesome NOT loaded';
+                        console.error('❌ Font Awesome not rendering');
+                    }
+                }
+            }, 500);
+            
+            // Test 1: Basic dropdown
+            const test1Dropdown = document.getElementById('test1Dropdown');
+            const test1Result = document.getElementById('test1-result');
+            
+            test1Dropdown.addEventListener('show.bs.dropdown', function(e) {
+                console.log('🔵 Test 1: SHOW event triggered');
+                test1Result.innerHTML = '<span class="text-warning">Opening...</span>';
+            });
+            
+            test1Dropdown.addEventListener('shown.bs.dropdown', function(e) {
+                console.log('🔵 Test 1: SHOWN event (dropdown visible)');
+                const menu = test1Dropdown.nextElementSibling;
+                test1Result.innerHTML = '<span class="text-success">✅ Dropdown opened successfully!</span>';
+                console.log('Test 1 menu styles:', {
+                    display: window.getComputedStyle(menu).display,
+                    position: window.getComputedStyle(menu).position,
+                    zIndex: window.getComputedStyle(menu).zIndex
+                });
+            });
+            
+            test1Dropdown.addEventListener('hide.bs.dropdown', function(e) {
+                console.log('🔵 Test 1: HIDE event triggered');
+            });
+            
+            // Test 2: Faculty-style dropdown with fixed strategy
+            const test2Dropdown = document.getElementById('test2Dropdown');
+            const test2Result = document.getElementById('test2-result');
+            
+            // Initialize with fixed strategy
+            const dropdown2 = new bootstrap.Dropdown(test2Dropdown, {
+                popperConfig: function(defaultConfig) {
+                    console.log('🟢 Test 2: Popper config called');
+                    defaultConfig.strategy = 'fixed';
+                    
+                    if (Array.isArray(defaultConfig.modifiers)) {
+                        defaultConfig.modifiers = defaultConfig.modifiers.map(function(mod) {
+                            return mod.name === 'flip' ? Object.assign({}, mod, { enabled: false }) : mod;
+                        });
+                    }
+                    
+                    console.log('🟢 Test 2: Strategy set to:', defaultConfig.strategy);
+                    return defaultConfig;
+                }
+            });
+            
+            test2Dropdown.addEventListener('show.bs.dropdown', function(e) {
+                console.log('🟢 Test 2: SHOW event triggered');
+                test2Result.innerHTML = '<strong>Expected:</strong> Red border around dropdown menu<br><span class="text-warning">Opening...</span>';
+            });
+            
+            test2Dropdown.addEventListener('shown.bs.dropdown', function(e) {
+                console.log('🟢 Test 2: SHOWN event (dropdown visible)');
+                const menu = test2Dropdown.nextElementSibling;
+                
+                const styles = {
+                    position: window.getComputedStyle(menu).position,
+                    display: window.getComputedStyle(menu).display,
+                    visibility: window.getComputedStyle(menu).visibility,
+                    opacity: window.getComputedStyle(menu).opacity,
+                    zIndex: window.getComputedStyle(menu).zIndex,
+                    border: window.getComputedStyle(menu).border,
+                    top: window.getComputedStyle(menu).top,
+                    left: window.getComputedStyle(menu).left
+                };
+                
+                console.log('🟢 Test 2 menu computed styles:', styles);
+                
+                // Check if successful
+                if (styles.display === 'block' && styles.visibility === 'visible' && styles.opacity === '1') {
+                    test2Result.innerHTML = '<strong>Expected:</strong> Red border around dropdown menu<br><span class="text-success">✅ Dropdown working! Do you see the RED BORDER?</span>';
+                } else {
+                    test2Result.innerHTML = '<strong>Expected:</strong> Red border around dropdown menu<br><span class="text-danger">❌ Dropdown may not be visible. Check console.</span>';
+                }
+            });
+            
+            test2Dropdown.addEventListener('hide.bs.dropdown', function(e) {
+                console.log('🟢 Test 2: HIDE event triggered');
+                test2Result.innerHTML = '<strong>Expected:</strong> Red border around dropdown menu<br><span class="text-muted">Closed. Click again to test.</span>';
+            });
+            
+            console.log('=== Test page ready. Click dropdowns to test. ===');
+        });
+    </script>
+</body>
+</html>

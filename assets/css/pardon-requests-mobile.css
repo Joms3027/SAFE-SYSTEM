@@ -1,0 +1,1029 @@
+/**
+ * Pardon Requests Page Mobile Styles
+ * Dedicated styles for faculty/pardon_requests.php
+ * Fixes overlapping card bodies and enhances mobile UX
+ * Version: 1.0.0
+ * Date: January 20, 2026
+ */
+
+/* ===================================
+   BASE STYLES (All Screens)
+   =================================== */
+
+/* Comparison Table */
+.pardon-comparison-table {
+    font-size: 0.875rem;
+}
+
+.pardon-comparison-table td {
+    padding: 0.5rem;
+}
+
+.pardon-original-value {
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+.pardon-requested-value {
+    color: #198754;
+    font-weight: 600;
+}
+
+/* Enhanced Table Styles */
+.pardon-table {
+    font-size: 0.9rem;
+}
+
+.pardon-table thead th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #dee2e6;
+    padding: 1rem 0.75rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.pardon-table tbody td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.pardon-table tbody tr {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.pardon-table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-left-color: #0d6efd;
+}
+
+/* Employee Info */
+.pardon-employee-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.pardon-employee-name {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.pardon-employee-id {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Enhanced Status Badge */
+.pardon-status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pardon-status-badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%) !important;
+    color: #000;
+}
+
+.pardon-status-badge.bg-success {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%) !important;
+    color: #fff;
+}
+
+.pardon-status-badge.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%) !important;
+    color: #fff;
+}
+
+/* Enhanced Buttons */
+.pardon-btn-view {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.pardon-btn-view:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+/* Detail Section */
+.pardon-detail-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #0d6efd;
+    position: relative;
+    z-index: 1;
+}
+
+.pardon-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.pardon-detail-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pardon-detail-value {
+    color: #212529;
+    font-size: 0.95rem;
+}
+
+/* Time Change Items */
+.pardon-time-change-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #fff;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+}
+
+.pardon-time-change-item:last-child {
+    margin-bottom: 0;
+}
+
+.pardon-time-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.pardon-time-values {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Document Links */
+.pardon-document-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #e7f3ff;
+    color: #0066cc;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    border: 1px solid #b3d9ff;
+}
+
+.pardon-document-link:hover {
+    background: #cce7ff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,102,204,0.2);
+}
+
+/* Empty State */
+.pardon-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.pardon-empty-state i {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.pardon-empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Page Header Enhancement */
+.pardon-page-header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    position: relative;
+    z-index: 10;
+}
+
+/* Card Enhancements with Isolation */
+.pardon-card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+    background: #fff;
+    margin-bottom: 1rem;
+}
+
+.pardon-card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+
+.pardon-card-body {
+    padding: 1rem;
+    position: relative;
+    overflow: visible;
+}
+
+/* History Modal Styles */
+.pardon-history-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    position: relative;
+    z-index: 1;
+}
+
+.pardon-history-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.pardon-history-item.approved {
+    border-left: 4px solid #198754;
+    background: linear-gradient(to right, #f0fdf4 0%, #fff 10%);
+}
+
+.pardon-history-item.rejected {
+    border-left: 4px solid #dc3545;
+    background: linear-gradient(to right, #fef2f2 0%, #fff 10%);
+}
+
+.pardon-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.pardon-history-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+/* Filter card - 100vh height, unique class to avoid conflicts */
+.pardon-filter-card,
+.card-pardon-requests-filters {
+    height: 26vh !important;
+    /* min-height: 100vh !important; */
+}
+
+/* Desktop filter card layout */
+@media (min-width: 768px) {
+    .pardon-filter-card,
+    .card-pardon-requests-filters {
+        height: 26vh !important;
+        /* min-height: 100vh !important; */
+    }
+    
+    .pardon-filter-card .card-body {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+    }
+    
+    .pardon-filter-card .card-body form {
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+        gap: 1rem;
+    }
+    
+    .pardon-filter-card .mb-3 {
+        margin-bottom: 0 !important;
+        flex: 1 1 0;
+    }
+    
+    .pardon-filter-card .mb-3:nth-child(1) {
+        flex: 2 1 0;
+    }
+    
+    .pardon-filter-card .d-flex {
+        flex: 1 1 0;
+        flex-direction: column;
+    }
+    
+    .pardon-filter-card .d-flex .btn {
+        width: 100%;
+    }
+}
+
+/* ===================================
+   MOBILE STYLES (< 768px)
+   =================================== */
+
+@media (max-width: 767.98px) {
+    /* === MAIN CONTAINER FIX === */
+    .pardon-container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        overflow-x: hidden;
+    }
+    
+    .pardon-main-content {
+        padding: 0.75rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* === PAGE HEADER MOBILE === */
+    .pardon-page-header {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 10px;
+        position: relative;
+        z-index: 10;
+    }
+    
+    .pardon-page-header h1 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .pardon-page-header .btn {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    /* === FILTER CARD MOBILE - NO OVERLAP === */
+    .pardon-filter-card,
+    .card-pardon-requests-filters {
+        height: 34vh !important;
+    }
+    
+    .pardon-filter-card {
+        box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        position: relative;
+        z-index: 5;
+        isolation: isolate;
+        overflow: visible;
+    }
+    
+    .pardon-filter-card .card-body {
+        padding: 1rem !important;
+        display: block !important;
+        height: auto !important;
+    }
+    
+    .pardon-filter-card .card-body form {
+        margin: 0;
+        display: block !important;
+    }
+    
+    .pardon-filter-card .mb-3 {
+        margin-bottom: 1rem !important;
+    }
+    
+    .pardon-filter-card .form-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .pardon-filter-card .form-control,
+    .pardon-filter-card .form-select {
+        font-size: 0.9rem;
+        padding: 0.625rem 0.875rem;
+        border-radius: 8px;
+        min-height: 44px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .pardon-filter-card .btn {
+        font-size: 0.9rem;
+        padding: 0.625rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        min-height: 44px;
+        width: 100%;
+    }
+    
+    .pardon-filter-card .d-flex.gap-2 {
+        gap: 0.75rem !important;
+        flex-direction: row;
+    }
+    
+    /* === REQUESTS CARD - ISOLATED === */
+    .pardon-requests-card {
+        position: relative;
+        z-index: 1;
+        isolation: isolate;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        overflow: visible;
+        margin-bottom: 1rem;
+    }
+    
+    .pardon-requests-card .card-header {
+        padding: 0.875rem 1rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .pardon-requests-card .card-header h5 {
+        font-size: 0.95rem;
+    }
+    
+    .pardon-requests-card .card-header .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .pardon-requests-card .card-body {
+        padding: 0.75rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* === MOBILE CARD LAYOUT FOR REQUESTS === */
+    .pardon-mobile-card {
+        display: block;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: visible;
+        isolation: isolate;
+        z-index: 1;
+    }
+    
+    .pardon-mobile-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: #0d6efd;
+        border-radius: 12px 0 0 12px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .pardon-mobile-card:hover::before,
+    .pardon-mobile-card:active::before {
+        opacity: 1;
+    }
+    
+    .pardon-mobile-card:active {
+        transform: scale(0.99);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Card Header Section */
+    .pardon-mobile-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #e9ecef;
+        gap: 0.75rem;
+    }
+    
+    .pardon-mobile-card-employee {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .pardon-mobile-card-employee-name {
+        font-weight: 600;
+        color: #212529;
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+        word-break: break-word;
+    }
+    
+    .pardon-mobile-card-employee-id {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .pardon-mobile-card-status {
+        flex-shrink: 0;
+    }
+    
+    /* Card Body Section */
+    .pardon-mobile-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .pardon-mobile-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        padding: 0.25rem 0;
+    }
+    
+    .pardon-mobile-card-label {
+        color: #6c757d;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    
+    .pardon-mobile-card-value {
+        color: #212529;
+        font-weight: 600;
+        text-align: right;
+        flex: 1;
+        padding-left: 0.5rem;
+    }
+    
+    /* Card Actions Section */
+    .pardon-mobile-card-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e9ecef;
+        flex-wrap: nowrap;
+    }
+    
+    .pardon-mobile-card-actions .btn {
+        flex: 1;
+        min-height: 44px;
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    
+    .pardon-mobile-card-actions .btn:active {
+        transform: scale(0.95);
+    }
+    
+    .pardon-mobile-card-actions .btn i {
+        font-size: 0.8rem;
+    }
+    
+    .pardon-mobile-card-actions .btn span {
+        display: inline;
+    }
+    
+    /* === EMPTY STATE MOBILE === */
+    .pardon-empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .pardon-empty-state i {
+        font-size: 3rem;
+    }
+    
+    .pardon-empty-title {
+        font-size: 1.25rem;
+    }
+    
+    /* === MODAL MOBILE - FIXED OVERLAP === */
+    .pardon-modal .modal-dialog {
+        margin: 0.5rem auto;
+        max-width: calc(100% - 1rem);
+        width: calc(100% - 1rem);
+    }
+    
+    .pardon-modal .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+    
+    .pardon-modal .modal-header {
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .pardon-modal .modal-header h5 {
+        font-size: 1.1rem;
+    }
+    
+    .pardon-modal .modal-body {
+        padding: 1rem;
+        max-height: calc(100vh - 180px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .pardon-modal .modal-footer {
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    
+    .pardon-modal .modal-footer button {
+        flex: 0 0 auto;
+        min-height: 44px;
+        padding: 0.625rem 1rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+    
+    /* === DETAIL SECTION MOBILE === */
+    .pardon-detail-section {
+        padding: 0.875rem;
+        margin-bottom: 0.75rem;
+        border-radius: 10px;
+    }
+    
+    .pardon-detail-label {
+        font-size: 0.8rem;
+    }
+    
+    .pardon-detail-value {
+        font-size: 0.9rem;
+    }
+    
+    .pardon-time-change-item {
+        padding: 0.625rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .pardon-time-values {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .pardon-document-link {
+        width: 100%;
+        justify-content: center;
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* === HISTORY MODAL MOBILE === */
+    .pardon-history-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .pardon-history-date {
+        text-align: left;
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+    
+    .pardon-history-details {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .pardon-history-item {
+        padding: 0.875rem;
+    }
+    
+    .pardon-history-actions .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+    
+    /* === PAGINATION MOBILE === */
+    .pardon-pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+    
+    .pardon-pagination .page-link {
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    /* === STATUS BADGE MOBILE === */
+    .pardon-status-badge {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.7rem;
+    }
+    
+    /* === TOUCH FEEDBACK === */
+    .pardon-btn-touch {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        touch-action: manipulation;
+    }
+    
+    .pardon-btn-touch:active {
+        opacity: 0.8;
+    }
+    
+    /* === HISTORY TABS MOBILE === */
+    .pardon-history-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .pardon-history-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .pardon-history-tabs .nav-link {
+        white-space: nowrap;
+        min-width: auto;
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ===================================
+   EXTRA SMALL MOBILE (< 480px)
+   =================================== */
+
+@media (max-width: 480px) {
+    .pardon-container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .pardon-main-content {
+        padding: 0.5rem;
+    }
+    
+    .pardon-page-header {
+        padding: 0.875rem;
+    }
+    
+    .pardon-page-header h1 {
+        font-size: 1.1rem;
+    }
+    
+    .pardon-mobile-card {
+        padding: 0.875rem;
+    }
+    
+    .pardon-mobile-card-employee-name {
+        font-size: 0.95rem;
+    }
+    
+    .pardon-mobile-card-actions .btn {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+    }
+    
+    .pardon-mobile-card-actions .btn span {
+        display: none;
+    }
+    
+    .pardon-modal .modal-dialog {
+        margin: 0.25rem auto;
+        max-width: calc(100% - 0.5rem);
+        width: calc(100% - 0.5rem);
+    }
+    
+    .pardon-modal .modal-body {
+        padding: 0.875rem;
+        font-size: 0.9rem;
+    }
+    
+    .pardon-detail-section {
+        padding: 0.75rem;
+    }
+    
+    .pardon-filter-card .card-body {
+        padding: 0.875rem !important;
+    }
+}
+
+/* ===================================
+   LANDSCAPE MOBILE
+   =================================== */
+
+@media (max-width: 767.98px) and (orientation: landscape) {
+    .pardon-mobile-card {
+        padding: 0.75rem;
+    }
+    
+    .pardon-mobile-card-header {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .pardon-modal .modal-body {
+        max-height: calc(100vh - 140px);
+    }
+}
+
+/* ===================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =================================== */
+
+@media (hover: none) and (pointer: coarse) {
+    .pardon-mobile-card:active {
+        transform: scale(0.98);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+    
+    .pardon-mobile-card-actions .btn:active {
+        transform: scale(0.93);
+    }
+}
+
+/* ===================================
+   ACCESSIBILITY
+   =================================== */
+
+.pardon-mobile-card-actions .btn:focus {
+    outline: 3px solid #0284c7;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pardon-mobile-card,
+    .pardon-mobile-card-actions .btn,
+    .pardon-history-item {
+        transition: none;
+    }
+    
+    .pardon-mobile-card:active,
+    .pardon-mobile-card-actions .btn:active {
+        transform: none;
+    }
+}
+
+/* ===================================
+   LOADING STATES
+   =================================== */
+
+@media (max-width: 767.98px) {
+    .pardon-btn-loading {
+        position: relative;
+        color: transparent !important;
+        pointer-events: none;
+    }
+    
+    .pardon-btn-loading::after {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        top: 50%;
+        left: 50%;
+        margin-left: -9px;
+        margin-top: -9px;
+        border: 2px solid currentColor;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: pardon-spin 0.6s linear infinite;
+    }
+    
+    @keyframes pardon-spin {
+        to { transform: rotate(360deg); }
+    }
+}
+
+/* ===================================
+   Z-INDEX MANAGEMENT (OVERLAP FIX)
+   =================================== */
+
+/* Ensure proper stacking order */
+.pardon-page-header {
+    z-index: 10;
+}
+
+.pardon-filter-card {
+    z-index: 5;
+}
+
+.pardon-requests-card {
+    z-index: 1;
+}
+
+.pardon-mobile-card {
+    z-index: 1;
+}
+
+/* Modal must be on top */
+#detailsModal {
+    z-index: 999999 !important;
+}
+
+#detailsModal .modal-backdrop {
+    z-index: 999998 !important;
+}
+
+#historyModal {
+    z-index: 999997 !important;
+}
+
+#historyModal .modal-backdrop {
+    z-index: 999996 !important;
+}
+
+#actionModal {
+    z-index: 999995 !important;
+}
+
+#actionModal .modal-backdrop {
+    z-index: 999994 !important;
+}
+
+/* Menu Toggle Fix for Mobile */
+.header .menu-toggle,
+.menu-toggle {
+    z-index: 10000 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    isolation: isolate !important;
+    transform: translateZ(0) !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1) !important;
+    cursor: pointer !important;
+}
+
+@media (max-width: 991.98px) {
+    .header .menu-toggle,
+    .menu-toggle {
+        z-index: 1031 !important;
+        position: relative !important;
+        pointer-events: auto !important;
+    }
+    
+    .header {
+        z-index: 1030 !important;
+        position: fixed !important;
+    }
+}

@@ -1,0 +1,493 @@
+/**
+ * HR Events Admin - Dedicated styles for /HR_EVENT/admin/events.php
+ * WPU SAFE – Event scanner management
+ */
+
+/* ---- Page wrapper (when used inside admin layout) ---- */
+.hr-event-admin .main-content {
+    max-width: 1000px;
+}
+
+/* ---- Page header ---- */
+.hr-event-admin .hr-event-page-header {
+    margin-bottom: 1.5rem;
+}
+
+.hr-event-admin .hr-event-page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.35rem 0;
+}
+
+.hr-event-admin .hr-event-page-desc {
+    color: #64748b;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ---- Page title / hero ---- */
+.hr-event-admin .page-header .page-title {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.hr-event-admin .page-header .page-title i {
+    color: #0ea5e9;
+    margin-right: 0.5rem;
+}
+
+/* ---- Alerts ---- */
+.hr-event-admin .alert {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.hr-event-admin .alert-success {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+.hr-event-admin .alert-danger {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.hr-event-admin .alert-warning {
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.hr-event-admin .alert-warning code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.875em;
+}
+
+/* ---- Create event card (fixed height - does NOT grow with events list) ---- */
+.hr-event-admin .card.hr-event-card.hr-event-create-card {
+    flex-shrink: 0;
+    flex-grow: 0;
+    height: auto;
+    align-self: flex-start;
+}
+
+.hr-event-admin .card.hr-event-card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.hr-event-admin .card.hr-event-card .card-header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #0e7490 100%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 1rem 1.25rem;
+    border: none;
+}
+
+.hr-event-admin .card.hr-event-card .card-body {
+    padding: 1.5rem 1.25rem;
+}
+
+.hr-event-admin .card.hr-event-card .form-label {
+    font-weight: 500;
+    color: #334155;
+}
+
+.hr-event-admin .card.hr-event-card .form-control {
+    border-radius: 8px;
+    border-color: #e2e8f0;
+}
+
+.hr-event-admin .card.hr-event-card .form-control:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.hr-event-admin .card.hr-event-card .btn-primary {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.6rem 1.25rem;
+    background: linear-gradient(135deg, #0c4a6e 0%, #0e7490 100%);
+    border: none;
+}
+
+.hr-event-admin .card.hr-event-card .btn-primary:hover {
+    background: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
+    transform: translateY(-1px);
+}
+
+.hr-event-admin .hr-event-create-form .form-text {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.hr-event-admin .hr-event-form-actions {
+    padding-top: 0.25rem;
+}
+
+.hr-event-admin .btn-create-event {
+    min-height: 44px;
+    padding: 0.6rem 1.5rem;
+}
+
+/* ---- Events list card ---- */
+.hr-event-admin .card.hr-event-list-card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.hr-event-admin .card.hr-event-list-card .card-header {
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* ---- Single event item ---- */
+.hr-event-admin .hr-event-item {
+    padding: 1.25rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s ease;
+}
+
+.hr-event-admin .hr-event-item:last-child {
+    border-bottom: none;
+}
+
+.hr-event-admin .hr-event-item:hover {
+    background: #f8fafc;
+}
+
+.hr-event-admin .hr-event-item .hr-event-title {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 1.05rem;
+}
+
+.hr-event-admin .hr-event-item .hr-event-meta {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.hr-event-admin .hr-event-item .hr-event-meta i {
+    opacity: 0.85;
+}
+
+.hr-event-admin .hr-event-item .hr-event-count {
+    color: #059669;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ---- QR block ---- */
+.hr-event-admin .hr-event-qr-block {
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.hr-event-admin .hr-event-qr-block img {
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.hr-event-admin .hr-event-qr-block .hr-event-qr-caption {
+    font-size: 0.75rem;
+    color: #64748b;
+    max-width: 120px;
+    margin-top: 0.35rem;
+    line-height: 1.3;
+}
+
+.hr-event-admin .hr-event-qr-block .btn-download-qr {
+    margin-top: 0.5rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* ---- Scanner link section ---- */
+.hr-event-admin .hr-event-scanner-link-wrap {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.hr-event-admin .hr-event-scanner-link-wrap .form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.25rem;
+}
+
+.hr-event-admin .hr-event-scanner-hint {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.hr-event-admin .hr-event-scanner-link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.hr-event-admin .hr-event-scanner-input {
+    flex: 1 1 280px;
+    min-width: 0;
+    border-radius: 8px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 0.8rem;
+    background: #f8fafc;
+}
+
+.hr-event-admin .hr-event-scanner-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.hr-event-admin .hr-event-scanner-btns .btn {
+    white-space: nowrap;
+    min-height: 38px;
+}
+
+.hr-event-admin .hr-event-scanner-link-wrap .btn-copy-scanner-link .btn-copy-text:not(:empty) {
+    display: inline;
+}
+
+.hr-event-admin .hr-event-scanner-link-wrap .btn-open-scanner {
+    border-radius: 8px;
+    font-weight: 500;
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+}
+
+.hr-event-admin .hr-event-scanner-link-wrap .btn-open-scanner:hover {
+    background: #0284c7;
+    border-color: #0284c7;
+}
+
+/* ---- Event history bar ---- */
+.hr-event-admin .hr-event-history-bar {
+    margin-bottom: 1rem;
+}
+
+.hr-event-admin .btn-event-history {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* ---- No upcoming events ---- */
+.hr-event-admin .hr-event-no-upcoming {
+    color: #64748b;
+    padding: 1.25rem;
+}
+
+/* ---- Empty state ---- */
+.hr-event-admin .card.hr-event-empty-card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.hr-event-admin .card.hr-event-empty-card .card-body.hr-event-empty-body {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+}
+
+.hr-event-admin .hr-event-empty-icon {
+    font-size: 3rem;
+    color: #cbd5e1;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.hr-event-admin .hr-event-empty-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #475569;
+    margin: 0 0 0.5rem 0;
+}
+
+.hr-event-admin .hr-event-empty-text {
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ---- Back to Admin link ---- */
+.hr-event-admin .hr-event-back-link {
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+}
+
+.hr-event-admin .hr-event-back-link:hover {
+    color: #0ea5e9;
+}
+
+/* ---- Badge ---- */
+.hr-event-admin .badge.bg-secondary {
+    font-weight: 500;
+    font-size: 0.7rem;
+}
+
+/* ---- Alerts dismissible ---- */
+.hr-event-admin .alert-dismissible .btn-close {
+    padding: 1rem;
+}
+
+/* ---- Attendance modal ---- */
+.hr-event-admin .hr-event-attendance-modal .modal-title .badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Export CSV bar */
+.hr-event-admin .hr-event-export-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+}
+
+.hr-event-admin .hr-event-export-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.hr-event-admin .hr-event-export-icon {
+    font-size: 1.75rem;
+    color: #059669;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.hr-event-admin .hr-event-export-title {
+    font-weight: 600;
+    color: #065f46;
+    font-size: 0.9375rem;
+    display: block;
+}
+
+.hr-event-admin .hr-event-export-desc {
+    font-size: 0.8125rem;
+    color: #047857;
+    margin: 0.2rem 0 0 0;
+    opacity: 0.9;
+}
+
+.hr-event-admin .hr-event-export-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hr-event-admin .hr-event-export-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.hr-event-admin .hr-event-export-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.hr-event-admin .hr-event-export-btn:disabled {
+    opacity: 0.9;
+    cursor: default;
+}
+
+.hr-event-admin .hr-event-export-btn-done {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+    color: #fff !important;
+}
+
+.hr-event-admin .hr-event-attendance-modal .table {
+    font-size: 0.9rem;
+}
+
+.hr-event-admin .hr-event-attendance-modal .table th {
+    font-weight: 600;
+    color: #334155;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 767px) {
+    .hr-event-admin .hr-event-page-title {
+        font-size: 1.25rem;
+    }
+    .hr-event-admin .hr-event-export-bar {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .hr-event-admin .hr-event-export-info {
+        justify-content: center;
+    }
+    .hr-event-admin .hr-event-export-btn {
+        width: 100%;
+    }
+    .hr-event-admin .hr-event-item .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .hr-event-admin .hr-event-qr-block {
+        width: 100%;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .hr-event-admin .hr-event-scanner-link-row {
+        flex-direction: column;
+    }
+    .hr-event-admin .hr-event-scanner-input {
+        flex: 1 1 100%;
+    }
+    .hr-event-admin .hr-event-scanner-btns {
+        width: 100%;
+    }
+    .hr-event-admin .hr-event-scanner-btns .btn {
+        flex: 1;
+    }
+}

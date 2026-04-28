@@ -1,0 +1,70 @@
+# Protect uploads directory
+# Allow access to uploaded files but prevent PHP execution
+# Compatible with Apache 2.2 and 2.4+
+
+# Prevent directory listing
+Options -Indexes -ExecCGI
+
+# Deny access to PHP and other executable files
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|pl|py|jsp|asp|aspx|sh|cgi|exe|bat|cmd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Prevent access to hidden files
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Block .htaccess and similar files
+<FilesMatch "\.(htaccess|htpasswd|ini|log|config)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Remove PHP handlers to prevent execution
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Remove script handlers
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .pl .py .jsp .asp .sh .cgi
+
+# Set content types for file downloads
+<IfModule mod_mime.c>
+    AddType application/pdf .pdf
+    AddType application/msword .doc
+    AddType application/vnd.openxmlformats-officedocument.wordprocessingml.document .docx
+    AddType image/jpeg .jpg .jpeg
+    AddType image/png .png
+    AddType image/gif .gif
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
+</IfModule>
+
+# Set security headers for uploaded files
+<IfModule mod_headers.c>
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+    # Force download for all files (security)
+    Header set Content-Disposition "attachment"
+</IfModule>

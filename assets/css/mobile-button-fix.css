@@ -1,0 +1,222 @@
+/**
+ * Mobile Button Fix CSS
+ * Ensures all buttons are clickable on mobile devices
+ */
+
+/* Ensure all buttons are interactive */
+button,
+.btn,
+.btn-action,
+.submit-requirement-btn,
+.attach-requirement-btn,
+a.btn,
+[role="button"],
+input[type="submit"],
+input[type="button"] {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(0, 51, 102, 0.1) !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    position: relative !important;
+    z-index: 10 !important;
+    pointer-events: auto !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
+}
+
+/* Ensure buttons are not blocked */
+button:not(:disabled),
+.btn:not(:disabled),
+.btn-action:not(:disabled) {
+    pointer-events: auto !important;
+}
+
+/* Overlay should not block when hidden */
+#sidebar-overlay:not(.show),
+#sidebar-overlay.d-none {
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
+/* Ensure main content is always interactive */
+.main-content {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 1;
+}
+
+/* Cards and containers should not block */
+.card,
+.card-body,
+.card-header,
+.card-footer {
+    pointer-events: auto !important;
+}
+
+/* Action buttons container */
+.action-buttons {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+}
+
+/* Requirement cards */
+.requirement-card,
+.requirement-card-footer {
+    pointer-events: auto !important;
+}
+
+/* Mobile specific fixes */
+@media (max-width: 991px) {
+    /* Ensure all interactive elements are above overlays */
+    button,
+    .btn,
+    .btn-action,
+    a,
+    input,
+    select,
+    textarea {
+        position: relative;
+        z-index: 100 !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Main content should be interactive */
+    .main-content,
+    .main-content * {
+        pointer-events: auto !important;
+    }
+    
+    /* Exception for overlays when hidden - CRITICAL FIX */
+    #sidebar-overlay:not(.show),
+    #sidebar-overlay.d-none,
+    .modal-backdrop:not(.show) {
+        pointer-events: none !important;
+        z-index: -1 !important;
+        display: none !important;
+    }
+    
+    /* Ensure buttons inside cards are clickable */
+    .card button,
+    .card .btn,
+    .card a.btn {
+        pointer-events: auto !important;
+        z-index: 10 !important;
+        position: relative;
+    }
+    
+    /* Ensure buttons in modals are clickable */
+    .modal button,
+    .modal .btn {
+        pointer-events: auto !important;
+        /* z-index handled by Bootstrap - don't override */
+    }
+}
+
+/* CRITICAL FIX: Specific handling for 768px breakpoint and all mobile sizes */
+@media (min-width: 768px) and (max-width: 991px) {
+    /* At 768px, ensure all buttons are fully interactive */
+    button:not(:disabled),
+    .btn:not(:disabled),
+    .btn-action:not(:disabled),
+    a.btn:not(:disabled),
+    input[type="submit"]:not(:disabled),
+    input[type="button"]:not(:disabled),
+    [role="button"]:not(:disabled),
+    a[href]:not(.nav-link) {
+        pointer-events: auto !important;
+        touch-action: manipulation !important;
+        cursor: pointer !important;
+        z-index: 100 !important;
+        position: relative !important;
+        -webkit-tap-highlight-color: rgba(0, 51, 102, 0.2) !important;
+    }
+    
+    /* Ensure buttons inside clickable containers (like table rows) work */
+    [onclick] button,
+    [onclick] .btn,
+    [onclick] a.btn {
+        pointer-events: auto !important;
+        z-index: 101 !important;
+        position: relative !important;
+    }
+    
+    /* Ensure overlay doesn't block at 768px when hidden */
+    #sidebar-overlay.d-none,
+    #sidebar-overlay:not(.show) {
+        pointer-events: none !important;
+        z-index: -1 !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        display: none !important;
+        top: -9999px !important;
+        left: -9999px !important;
+    }
+    
+    /* Ensure main content is always accessible */
+    .main-content {
+        pointer-events: auto !important;
+        z-index: 1 !important;
+    }
+    
+    /* Ensure cards and containers don't block interactions */
+    .card,
+    .card-body,
+    .card-header,
+    .card-footer,
+    .table-responsive,
+    table,
+    tbody,
+    tr,
+    td {
+        pointer-events: auto !important;
+    }
+    
+    /* Ensure buttons inside cards and tables are always clickable */
+    .card button,
+    .card .btn,
+    .card a.btn,
+    .card .btn-action,
+    table button,
+    table .btn,
+    table a.btn,
+    td button,
+    td .btn,
+    td a.btn {
+        pointer-events: auto !important;
+        z-index: 101 !important;
+        position: relative !important;
+    }
+    
+    /* Table rows should not block button clicks */
+    tr[onclick] {
+        pointer-events: auto !important;
+    }
+    
+    tr[onclick] td:has(button),
+    tr[onclick] td:has(.btn) {
+        pointer-events: auto !important;
+    }
+}
+
+/* Additional fix for all mobile sizes */
+@media (max-width: 991px) {
+    /* Ensure buttons work on all touch devices */
+    button:not(:disabled),
+    .btn:not(:disabled),
+    a.btn:not(:disabled) {
+        -webkit-tap-highlight-color: rgba(0, 51, 102, 0.2) !important;
+        touch-action: manipulation !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Fix for buttons in clickable parents */
+    [onclick] button,
+    [onclick] .btn,
+    [onclick] a.btn {
+        z-index: 101 !important;
+        position: relative !important;
+    }
+}
+

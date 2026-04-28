@@ -1,0 +1,50 @@
+# Additional security for admin directory
+# Protect admin pages with additional security measures
+
+# Prevent directory listing
+Options -Indexes
+
+# Block access to sensitive admin files
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sql|md|bak|config|dist|env|txt)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Prevent access to template.php files (but allow download_template.php)
+# Block only files that are exactly "template.php" (not download_template.php)
+<Files "template.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Block suspicious requests
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Must match your app URL (same folder as parent RewriteBase + /admin/). Fixes 404 on extensionless URLs e.g. /FP/admin/tarf_requests
+    RewriteBase /FP/admin/
+
+    # Internal rewrite: /FP/admin/page -> page.php when the file exists (clean_url() links omit .php)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L,QSA]
+
+    # Block suspicious query strings
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} base64_encode.*\(.*\) [OR]
+    RewriteCond %{QUERY_STRING} (<|%3C).*iframe.*(>|%3E) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+</IfModule>
+
+# Security headers for admin pages
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    # Stricter CSP for admin (adjust as needed)
+    # Allow cdn.jsdelivr.net for external libraries like SweetAlert2, Intro.js, etc.
+    Header always set Content-Security-Policy "default-src 'self'; manifest-src 'self' http://localhost:* https://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https: http:; font-src 'self' data: https: http:; connect-src 'self' https: http: ws: wss: localhost:* 127.0.0.1:* *:443 *:80 *:8080; frame-ancestors 'self';"
+</IfModule>
+

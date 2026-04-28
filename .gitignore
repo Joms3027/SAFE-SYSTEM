@@ -1,0 +1,96 @@
+# SAFE_SYSTEM/FP .gitignore
+
+# Environment Configuration
+.env
+includes/config.php
+
+# User Uploads
+uploads/*
+!uploads/.htaccess
+!uploads/README.md
+
+# Logs
+storage/logs/*.log
+storage/logs/*.txt
+!storage/logs/.htaccess
+!storage/logs/README.md
+
+# Composer
+vendor/
+composer.phar
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# System Files
+.htaccess.local
+php_errors.log
+
+# Database Backups (keep in db/ folder instead)
+/*.sql
+!wpu_faculty_system.sql
+db/backups/*.sql
+db/backup.env
+
+# Test Files (keep for development)
+# test_*.php
+
+# Node Modules (if using npm)
+node_modules/
+
+# Cache
+cache/
+*.cache
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# PHPStorm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Backup Files
+*.backup
+*.old
+
+# Sensitive Files
+*.key
+*.pem
+*.cert
+*.crt
+
+# Development Files
+TODO.md
+NOTES.md
+.env.local
+.env.development
+
+# Keep Important Files
+!.htaccess
+!.htaccess.example
+!.env.example
+!README.md
+!PORTABILITY_GUIDE.md
+!TRANSFER_CHECKLIST.md
+

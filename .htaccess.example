@@ -1,0 +1,108 @@
+# .htaccess for SAFE_SYSTEM/FP
+# This file is optional but recommended for better URL handling
+
+# Enable rewrite engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Set base directory (auto-detected, usually no change needed)
+    # RewriteBase /
+    
+    # Force HTTPS (uncomment for production with SSL)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    
+    # Prevent directory listing
+    Options -Indexes
+    
+    # Block access to sensitive files
+    <FilesMatch "^(config\.php|\.env|\.git|composer\.json|composer\.lock)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy (adjust as needed)
+    # Header always set Content-Security-Policy "default-src 'self';"
+</IfModule>
+
+# PHP Settings (adjust as needed)
+<IfModule mod_php7.c>
+    # Upload settings
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+    
+    # Session settings
+    php_value session.gc_maxlifetime 3600
+    php_value session.cookie_httponly 1
+</IfModule>
+
+<IfModule mod_php8.c>
+    # Upload settings
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+    
+    # Session settings
+    php_value session.gc_maxlifetime 3600
+    php_value session.cookie_httponly 1
+</IfModule>
+
+# Compression (for better performance)
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Browser Caching (for better performance)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType text/javascript "access plus 1 week"
+    
+    # Fonts
+    ExpiresByType font/ttf "access plus 1 month"
+    ExpiresByType font/woff "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 month"
+</IfModule>
+
+# Error pages (optional - create these files if you want custom error pages)
+# ErrorDocument 404 /error404.php
+# ErrorDocument 500 /error500.php
+
+# Protect uploads directory from executing PHP
+<Directory "uploads">
+    <FilesMatch "\.php$">
+        Require all denied
+    </FilesMatch>
+</Directory>
+
+# Note: This file is portable and will work on any Apache server
+# No hardcoded paths - uses relative references
+

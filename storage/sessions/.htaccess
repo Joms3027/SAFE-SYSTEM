@@ -1,0 +1,7 @@
+# Protect session files
+Order Deny,Allow
+Deny from all
+
+# Prevent directory listing
+Options -Indexes
+

@@ -1,0 +1,134 @@
+/**
+ * Bootstrap Modal Override CSS
+ * 
+ * CRITICAL: This file overrides Bootstrap's modal z-index to prevent
+ * closed modals from blocking buttons on mobile devices.
+ * 
+ * Bootstrap's default modal z-index is 1055, which blocks buttons even
+ * when the modal is closed. This file forces closed modals to be
+ * completely non-blocking.
+ */
+
+/* CRITICAL: Override Bootstrap's .modal when NOT showing - HIGHEST PRIORITY */
+.modal:not(.show),
+.modal.fade:not(.show),
+body:not(.modal-open) .modal,
+body:not(.modal-open) .modal.fade,
+html body:not(.modal-open) .modal,
+html body:not(.modal-open) .modal.fade {
+    /* Completely hide and disable when closed */
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -9999 !important;
+    position: fixed !important;
+    top: -99999px !important;
+    left: -99999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* CRITICAL: Override Bootstrap's .modal-backdrop when NOT showing */
+.modal-backdrop:not(.show),
+.modal-backdrop.fade:not(.show),
+body:not(.modal-open) .modal-backdrop,
+body:not(.modal-open) .modal-backdrop.fade,
+html body:not(.modal-open) .modal-backdrop {
+    /* Completely hide and disable when closed */
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -9999 !important;
+    position: fixed !important;
+    top: -99999px !important;
+    left: -99999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+/* Ensure modals work correctly when OPEN */
+body.modal-open .modal.show,
+body.modal-open .modal.fade.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 1055 !important; /* Bootstrap's default */
+    position: fixed !important;
+}
+
+/* Ensure backdrops work correctly when OPEN */
+body.modal-open .modal-backdrop.show,
+body.modal-open .modal-backdrop.fade.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 0.5 !important;
+    pointer-events: auto !important;
+    z-index: 1040 !important; /* Bootstrap's default */
+    position: fixed !important;
+}
+
+/* Mobile-specific overrides - Even more aggressive */
+@media (max-width: 991px) {
+    /* CRITICAL: On mobile, completely remove closed modals from layout */
+    body:not(.modal-open) .modal,
+    body:not(.modal-open) .modal.fade,
+    body:not(.modal-open) .modal:not(.show),
+    html body:not(.modal-open) .modal,
+    html body:not(.modal-open) .modal.fade {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
+        position: fixed !important;
+        top: -99999px !important;
+        left: -99999px !important;
+        width: 0 !important;
+        height: 0 !important;
+        max-width: 0 !important;
+        max-height: 0 !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        transform: scale(0) !important;
+    }
+    
+    /* CRITICAL: On mobile, completely remove closed backdrops */
+    body:not(.modal-open) .modal-backdrop,
+    body:not(.modal-open) .modal-backdrop.fade,
+    body:not(.modal-open) .modal-backdrop:not(.show) {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
+        position: fixed !important;
+        top: -99999px !important;
+        left: -99999px !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+}
+

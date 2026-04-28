@@ -1,0 +1,56 @@
+First Name*,Last Name*,Middle Name,Email (@wpu.edu.ph)*,User Type* (faculty/staff),Gender,Campus,Department,Position,Employment Status
+Juan,Dela Cruz,Santos,juan.delacruz@wpu.edu.ph,faculty,Male,Main Campus,Computer Science,Professor,Permanent
+Maria,Garcia,Lopez,maria.garcia@wpu.edu.ph,staff,Female,Iligan Campus,Admin Office,Admin Assistant,Contractual
+
+"=== REFERENCE DATA - Available Options ===",,,,,,
+
+"Available Departments:",,,,,,
+,,,,,CAS,,
+,,,,,CFINS,,
+,,,,,CCJE,,
+,,,,,CPAM,,
+,,,,,CED,,
+,,,,,CET,,
+,,,,,CCAS,,
+,,,,,Computer Science,,
+,,,,,Information Technology,,
+,,,,,Engineering,,
+,,,,,Education,,
+,,,,,Business Administration,,
+,,,,,Arts and Sciences,,
+,,,,,Admin Office,,
+,,,,,Other,,
+
+"Available Positions:",,,,,,
+,,,,,,Professor,
+,,,,,,Associate Professor,
+,,,,,,Assistant Professor,
+,,,,,,Instructor,
+,,,,,,Instructor 1,
+,,,,,,Instructor 2,
+,,,,,,Instructor 3,
+,,,,,,Lecturer,
+,,,,,,Admin Assistant,
+,,,,,,Admin Staff,
+,,,,,,Department Head,
+,,,,,,Dean,
+,,,,,,Other,
+
+"Available Employment Statuses:",,,,,,
+,,,,,,,Permanent
+,,,,,,,Contractual
+,,,,,,,Part-time
+,,,,,,,Probationary
+,,,,,,,Regular
+,,,,,,,Casual
+,,,,,,,Staff
+
+"INSTRUCTIONS:",,,,,,
+"1. Fill in your data starting from row 2",,,,,,
+"2. Required fields are marked with * (First Name, Last Name, Email, User Type)",,,,,,
+"3. Email must end with @wpu.edu.ph",,,,,,
+"4. User Type must be either 'faculty' or 'staff'",,,,,,
+"5. Department, Position, and Employment Status are optional",,,,,,
+"6. You can copy values from the reference data above",,,,,,
+"7. Delete rows 4 onwards (reference data) before uploading, or keep them - they will be ignored",,,,,,
+"8. Save this file and upload it in the Batch Upload tab",,,,,,

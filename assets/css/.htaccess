@@ -1,0 +1,27 @@
+# CSS Files - Ensure correct MIME type
+# This file ensures CSS files are always served with text/css MIME type
+
+# Prevent PHP from processing CSS files
+<FilesMatch "\.css$">
+    <IfModule mod_php7.c>
+        php_flag engine off
+    </IfModule>
+    <IfModule mod_php8.c>
+        php_flag engine off
+    </IfModule>
+    SetHandler default-handler
+    ForceType text/css
+</FilesMatch>
+
+# Set MIME type
+<IfModule mod_mime.c>
+    AddType text/css .css
+</IfModule>
+
+# Set Content-Type header
+<IfModule mod_headers.c>
+    <FilesMatch "\.css$">
+        Header set Content-Type "text/css; charset=UTF-8"
+    </FilesMatch>
+</IfModule>
+

@@ -1,0 +1,197 @@
+/**
+ * Attendance page styles
+ * Custom filter bar - does not use .card to avoid inheriting full-width layout
+ */
+
+/* Filter bar - compact, content-sized width */
+.attendance-filters {
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
+    background: #fff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.attendance-filters__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 0.75rem;
+}
+
+.attendance-filters__field {
+    display: flex;
+    flex-direction: column;
+}
+
+.attendance-filters__label {
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.attendance-filters__input,
+.attendance-filters__select {
+    width: auto;
+    max-width: 150px;
+    height: 32px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.attendance-filters__input:focus,
+.attendance-filters__select:focus {
+    border-color: #003366;
+    outline: 0;
+    box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.15);
+}
+
+/* Date + Today quick action */
+.attendance-filters__date-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.attendance-filters__date-wrap .attendance-filters__input {
+    max-width: 140px;
+}
+
+.attendance-filters__quick {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #003366;
+    background: rgba(0, 51, 102, 0.08);
+    border: 1px solid rgba(0, 51, 102, 0.2);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.attendance-filters__quick:hover {
+    background: rgba(0, 51, 102, 0.12);
+    border-color: rgba(0, 51, 102, 0.35);
+}
+
+/* Search with icon and clear */
+.attendance-filters__search-wrap {
+    flex: 0 0 auto;
+}
+
+.attendance-filters__input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.attendance-filters__input-icon {
+    position: absolute;
+    left: 0.5rem;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    pointer-events: none;
+}
+
+.attendance-filters__input-group .attendance-filters__input {
+    padding-left: 1.6rem;
+    padding-right: 1.75rem;
+    max-width: 160px;
+}
+
+.attendance-filters__select#filterStation {
+    max-width: 180px;
+}
+
+.attendance-filters__clear {
+    position: absolute;
+    right: 0.25rem;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: color 0.15s ease, background 0.15s ease;
+    visibility: hidden;
+}
+
+.attendance-filters__clear:hover {
+    color: #64748b;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Action buttons */
+.attendance-filters__actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.attendance-filters__btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    height: 32px;
+    border-radius: 0.375rem;
+    min-width: 32px;
+}
+
+.attendance-filters__btn i {
+    margin: 0;
+}
+
+/* Header meta (loading + count) */
+.attendance-header__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.attendance-header__meta .badge {
+    font-size: 0.75rem;
+}
+
+/* Table loading state */
+.table-responsive.attendance-loading {
+    position: relative;
+}
+
+.table-responsive.attendance-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+}
+
+/* Table */
+.attendance-table th {
+    white-space: nowrap;
+}
+
+.attendance-table td {
+    vertical-align: middle;
+}
+
+.badge-station {
+    font-size: 0.7rem;
+}

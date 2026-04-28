@@ -1,0 +1,254 @@
+/**
+ * Optimized CSS - Lightweight Core Styles
+ * This file contains essential styles for fast initial page load
+ * Non-critical styles are loaded asynchronously
+ */
+
+/* ===== CSS Variables (Minimal Set) ===== */
+:root {
+    --primary: #003366;
+    --primary-light: #005599;
+    --bg: #f8fafc;
+    --bg-white: #fff;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --shadow: 0 1px 3px rgba(0,0,0,.1);
+    --radius: .5rem;
+}
+
+/* ===== Reset (Minimal) ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ===== Base ===== */
+html { 
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+/* ===== Layout ===== */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    z-index: 1030;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-white);
+    border-right: 1px solid var(--border);
+    z-index: 1028;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    overflow-y: auto;
+    will-change: transform;
+}
+
+.sidebar.show { transform: translateX(0); }
+
+.main-content {
+    margin-top: 56px;
+    padding: 1rem;
+    min-height: calc(100vh - 56px);
+}
+
+/* Desktop layout (1025px and above) */
+@media (min-width: 1025px) {
+    .header { left: 280px; width: calc(100% - 280px); }
+    .sidebar { transform: translateX(0); }
+    .main-content { margin-left: 280px; width: calc(100% - 280px); }
+}
+
+/* Tablet layout (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .header { left: 0; width: 100%; }
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.show { transform: translateX(0); }
+    .main-content { margin-left: 0; width: 100%; padding: 1.5rem; }
+}
+
+/* ===== Typography ===== */
+h1, h2, h3, h4, h5, h6 { font-weight: 600; color: var(--text); }
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+h5 { font-size: 1rem; }
+
+a { color: var(--primary); text-decoration: none; }
+
+/* ===== Cards ===== */
+.card {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.card-header {
+    padding: .75rem 1rem;
+    background: linear-gradient(to bottom, #f8fafc, #fff);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-body { padding: 1rem; }
+
+/* ===== Buttons ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .5rem 1rem;
+    font-size: .9rem;
+    font-weight: 500;
+    border-radius: .375rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+}
+
+.btn:active { transform: scale(.98); }
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #fff;
+}
+
+.btn-outline-primary {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: transparent;
+}
+
+.btn-sm { padding: .25rem .75rem; font-size: .85rem; }
+
+/* ===== Forms ===== */
+.form-control {
+    width: 100%;
+    padding: .5rem .75rem;
+    font-size: .9rem;
+    border: 1px solid var(--border);
+    border-radius: .375rem;
+    background: var(--bg-white);
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0,51,102,.1);
+}
+
+/* ===== Tables ===== */
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: .75rem; border-bottom: 1px solid var(--border); text-align: left; }
+.table th { font-weight: 600; background: var(--bg); }
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ===== Badges ===== */
+.badge {
+    display: inline-block;
+    padding: .25rem .5rem;
+    font-size: .75rem;
+    font-weight: 500;
+    border-radius: .25rem;
+    color: #fff;
+}
+
+.bg-success { background: var(--success); }
+.bg-warning { background: var(--warning); }
+.bg-danger { background: var(--danger); }
+.bg-primary { background: var(--primary); }
+
+/* ===== Utilities ===== */
+.d-none { display: none !important; }
+.d-flex { display: flex !important; }
+.d-block { display: block !important; }
+.flex-column { flex-direction: column; }
+.align-items-center { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.gap-1 { gap: .25rem; }
+.gap-2 { gap: .5rem; }
+.gap-3 { gap: 1rem; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: .25rem !important; }
+.mb-2 { margin-bottom: .5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.me-1 { margin-right: .25rem !important; }
+.me-2 { margin-right: .5rem !important; }
+.text-muted { color: var(--text-muted) !important; }
+.text-center { text-align: center; }
+.small { font-size: .85rem; }
+
+/* ===== Empty State ===== */
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state i { font-size: 2.5rem; opacity: .5; margin-bottom: .5rem; }
+
+/* ===== Overlay ===== */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 1026;
+    display: none;
+}
+
+.sidebar-overlay.show { display: block; }
+
+@media (min-width: 1025px) {
+    .sidebar-overlay { display: none !important; }
+}
+
+/* ===== Mobile Touch Optimization ===== */
+@media (hover: none) {
+    .btn, .nav-link, .dropdown-item { min-height: 44px; }
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== Print ===== */
+@media print {
+    .sidebar, .header, .btn { display: none !important; }
+    .main-content { margin: 0 !important; width: 100% !important; }
+}
+

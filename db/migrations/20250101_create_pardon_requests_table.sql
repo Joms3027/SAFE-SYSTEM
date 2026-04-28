@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS pardon_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id VARCHAR(50) NOT NULL,
+    log_id INT NOT NULL,
+    log_date DATE NOT NULL,
+    original_time_in TIME NULL,
+    original_lunch_out TIME NULL,
+    original_lunch_in TIME NULL,
+    original_time_out TIME NULL,
+    requested_time_in TIME NULL,
+    requested_lunch_out TIME NULL,
+    requested_lunch_in TIME NULL,
+    requested_time_out TIME NULL,
+    reason TEXT NOT NULL,
+    supporting_documents TEXT NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    reviewed_by INT NULL,
+    reviewed_at TIMESTAMP NULL,
+    review_notes TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_employee_id (employee_id),
+    INDEX idx_log_id (log_id),
+    INDEX idx_status (status),
+    INDEX idx_log_date (log_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+

@@ -1,0 +1,507 @@
+/**
+ * DTR Submissions - Dedicated CSS
+ * Scoped to .dtr-submissions-page - does NOT affect other modules/sites
+ * Faculty DTR Submissions page: mobile-first UX, touch targets, filters
+ */
+
+/* ==========================================
+   PAGE LAYOUT & CONTAINER
+   ========================================== */
+.dtr-submissions-page .dtr-submissions-container {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+}
+.dtr-submissions-page .dtr-page-header .page-subtitle {
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    margin-top: 0.25rem;
+}
+
+/* ==========================================
+   FILTERS (inline form, no card)
+   ========================================== */
+.dtr-submissions-page .dtr-submissions-filters {
+    margin-bottom: 1.25rem;
+}
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-form.row {
+    margin-bottom: 0;
+    margin-top: 0;
+    margin-left: -0.375rem;
+    margin-right: -0.375rem;
+    align-items: flex-end;
+    gap: 0.5rem 0.75rem;
+}
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .col-md-2,
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .dtr-filters-field,
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-form [class*="col-"] {
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+    margin-bottom: 0;
+}
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .form-label {
+    margin-bottom: 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #374151;
+}
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .form-select,
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .form-control {
+    min-height: 38px;
+    border-radius: 8px;
+}
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-actions .btn,
+.dtr-submissions-page .dtr-submissions-filters .dtr-filters-actions a.btn {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    -webkit-tap-highlight-color: rgba(0, 51, 102, 0.1);
+    touch-action: manipulation;
+}
+.dtr-submissions-page .dtr-submissions-filters .dtr-btn-apply {
+    min-width: 100px;
+}
+
+/* ==========================================
+   VIEW DTR MODAL - Scoped styles
+   ========================================== */
+.dtr-submissions-page #viewDtrModal .modal-dialog {
+    max-width: 720px;
+}
+
+.dtr-submissions-page #viewDtrModal .dtr-form-wrap {
+    font-family: "Times New Roman", Times, serif;
+    color: #000;
+    background: #fff;
+    padding: 1.25rem;
+    border: 1px solid #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-form-title {
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.15rem;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-form-subtitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.15rem;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-form-line {
+    text-align: center;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.75rem;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-field-row {
+    font-size: 0.9rem;
+    margin-bottom: 0.35rem;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-field-inline {
+    display: inline-block;
+    border-bottom: 1px solid #000;
+    min-width: 180px;
+    margin-left: 0.35rem;
+    padding: 0 0.25rem 0.1rem;
+    font-size: 0.9rem;
+}
+/* DTR table - force table display (NOT in .table-responsive, must override any global table rules) */
+.dtr-submissions-page #viewDtrModal .dtr-table,
+#viewDtrModal .dtr-table {
+    display: table !important;
+    font-size: 0.8rem;
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-table thead,
+#viewDtrModal .dtr-table thead { display: table-header-group !important; }
+.dtr-submissions-page #viewDtrModal .dtr-table tbody,
+#viewDtrModal .dtr-table tbody { display: table-row-group !important; }
+.dtr-submissions-page #viewDtrModal .dtr-table tr,
+#viewDtrModal .dtr-table tr { display: table-row !important; }
+.dtr-submissions-page #viewDtrModal .dtr-table th,
+.dtr-submissions-page #viewDtrModal .dtr-table td,
+#viewDtrModal .dtr-table th,
+#viewDtrModal .dtr-table td {
+    display: table-cell !important;
+    padding: 0.2rem 0.25rem;
+    vertical-align: middle;
+    border: 1px solid #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-table th {
+    background: #fff;
+    font-weight: 700;
+    text-align: center;
+}
+.dtr-submissions-page #viewDtrModal .dtr-table .dtr-day {
+    width: 2.25em;
+    text-align: center;
+}
+.dtr-submissions-page #viewDtrModal .dtr-table .dtr-time {
+    width: 4em;
+    text-align: center;
+}
+.dtr-submissions-page #viewDtrModal .dtr-table .dtr-undertime {
+    width: 2.75em;
+    text-align: center;
+}
+.dtr-submissions-page #viewDtrModal .dtr-table tbody tr.dtr-total {
+    font-weight: 700;
+}
+.dtr-submissions-page #viewDtrModal .dtr-official-row {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-official-row .dtr-field-inline {
+    min-width: 80px;
+}
+.dtr-submissions-page #viewDtrModal .dtr-certify {
+    font-size: 0.8rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
+    line-height: 1.35;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-verified {
+    font-size: 0.8rem;
+    margin-top: 1rem;
+    margin-bottom: 0;
+    color: #000;
+}
+.dtr-submissions-page #viewDtrModal .dtr-verified .dtr-incharge {
+    display: block;
+    font-weight: 700;
+    margin-top: 0.25rem;
+}
+.dtr-submissions-page #viewDtrModal .dtr-verified .dtr-incharge:empty {
+    font-weight: normal;
+    border-bottom: 1px solid #000;
+    min-width: 200px;
+}
+
+/* ==========================================
+   CRITICAL: Modal & Backdrop z-index fix
+   Sidebar on mobile = 1999, so modal must be above
+   Scoped ONLY to dtr-submissions page
+   ========================================== */
+body.dtr-submissions-page.modal-open #viewDtrModal.modal,
+body.dtr-submissions-page.modal-open #viewDtrModal.modal.show {
+    z-index: 2001 !important;
+}
+body.dtr-submissions-page.modal-open #viewDtrModal .modal-dialog {
+    z-index: 2002 !important;
+}
+body.dtr-submissions-page.modal-open .modal-backdrop.show {
+    z-index: 2000 !important;
+}
+
+/* ==========================================
+   MOBILE: Filters - collapsible, touch-friendly
+   ========================================== */
+@media (max-width: 767px) {
+    .dtr-submissions-page .dtr-submissions-filters {
+        padding-bottom: max(0, env(safe-area-inset-bottom));
+    }
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-form.row {
+        gap: 0.5rem 0.5rem;
+    }
+    /* Year/Month side by side; Search full width; Actions full width */
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .dtr-filters-field.col-6 {
+        flex: 0 0 calc(50% - 0.25rem);
+        max-width: calc(50% - 0.25rem);
+    }
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .dtr-filters-field.col-12 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .dtr-filters-actions {
+        flex: 0 0 100%;
+        max-width: 100%;
+        justify-content: stretch;
+        margin-top: 0.25rem;
+    }
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .form-label {
+        margin-bottom: 0.2rem;
+        font-size: 0.8125rem;
+    }
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .form-select,
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-form .form-control {
+        min-height: 44px;
+        font-size: 16px; /* avoids zoom on focus in iOS */
+    }
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-actions .btn,
+    .dtr-submissions-page .dtr-submissions-filters .dtr-filters-actions a.btn {
+        flex: 1;
+        min-height: 48px;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9375rem;
+    }
+}
+
+/* ==========================================
+   SUBMISSIONS CARD - Header & toolbar
+   ========================================== */
+.dtr-submissions-page .dtr-submissions-card {
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    overflow: visible;
+}
+.dtr-submissions-page .dtr-submissions-card-header {
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.dtr-submissions-page .dtr-submissions-title {
+    font-weight: 600;
+}
+.dtr-submissions-page .dtr-count-badge {
+    font-weight: 500;
+    color: #6b7280;
+}
+.dtr-submissions-page .dtr-submissions-toolbar .dtr-batch-label {
+    display: inline;
+}
+@media (max-width: 767px) {
+    .dtr-submissions-page .dtr-submissions-toolbar .dtr-batch-label {
+        display: none;
+    }
+    .dtr-submissions-page .dtr-submissions-toolbar .btn#batchVerifyBtn i {
+        margin-right: 0;
+    }
+}
+
+/* ==========================================
+   EMPTY STATE
+   ========================================== */
+.dtr-submissions-page .dtr-empty-state {
+    color: #6b7280;
+}
+.dtr-submissions-page .dtr-empty-state .fa-inbox {
+    opacity: 0.5;
+}
+
+/* ==========================================
+   MOBILE: Submissions table - card layout
+   Scoped to .dtr-submissions-table
+   ========================================== */
+@media (max-width: 767px) {
+    .dtr-submissions-page .dtr-submissions-table {
+        min-height: 0;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive {
+        border: none;
+        margin: 0 -0.5rem;
+        padding: 0 0.5rem;
+        overflow-x: visible;
+        overflow-y: visible;
+        background: transparent;
+    }
+    /* Prevent card from clipping the action button */
+    .dtr-submissions-page .dtr-submissions-card {
+        overflow: visible;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive table {
+        border: none;
+        width: 100%;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive thead {
+        display: none;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody {
+        display: block;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody tr {
+        display: block;
+        background: #fff;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid #003366;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody tr:active {
+        transform: scale(0.98);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0;
+        border: none;
+        border-bottom: 1px solid #f3f4f6;
+        text-align: left !important;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        position: relative;
+        box-sizing: border-box;
+        clear: both;
+        margin: 0;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td:first-child {
+        padding-top: 0;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: 700;
+        color: #6b7280;
+        font-size: 0.6875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+        position: relative;
+        z-index: 1;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td .badge {
+        display: inline-block;
+        vertical-align: middle;
+        position: relative;
+        z-index: 2;
+        margin-top: 0.25rem;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td .btn {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: 0.5rem 0.75rem;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0, 51, 102, 0.1);
+        position: relative;
+        z-index: 2;
+        margin-top: 0.5rem;
+        box-sizing: border-box;
+    }
+    /* Actions cell: ensure button is visible, no overflow clip */
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td[data-label="Actions"] {
+        overflow: visible;
+        padding-top: 0.75rem;
+        border-bottom: none;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody td[data-label="Actions"]::before {
+        margin-bottom: 0.35rem;
+    }
+    /* Empty state row */
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody tr td[colspan] {
+        padding: 2rem 1rem;
+        text-align: center !important;
+    }
+    .dtr-submissions-page .dtr-submissions-table .table-responsive tbody tr td[colspan]::before {
+        display: none;
+    }
+}
+
+/* ==========================================
+   MOBILE: DTR Modal - full width, scrollable
+   ========================================== */
+@media (max-width: 767px) {
+    .dtr-submissions-page #viewDtrModal .modal-dialog {
+        max-width: 95vw !important;
+        margin: 0.5rem auto !important;
+    }
+    .dtr-submissions-page #viewDtrModal .modal-content {
+        max-width: 100% !important;
+    }
+    .dtr-submissions-page #viewDtrModal .dtr-form-wrap {
+        padding: 0.75rem;
+    }
+    .dtr-submissions-page #viewDtrModal .dtr-form-title {
+        font-size: 0.9rem;
+    }
+    .dtr-submissions-page #viewDtrModal .dtr-form-subtitle {
+        font-size: 0.85rem;
+    }
+    .dtr-submissions-page #viewDtrModal .dtr-field-inline {
+        min-width: 120px;
+        font-size: 0.8rem;
+    }
+    .dtr-submissions-page #viewDtrModal .dtr-table {
+        font-size: 0.65rem;
+    }
+    .dtr-submissions-page #viewDtrModal .dtr-table th,
+    .dtr-submissions-page #viewDtrModal .dtr-table td {
+        padding: 0.15rem 0.1rem;
+    }
+}
+
+/* ==========================================
+   PAGINATION - Touch-friendly
+   ========================================== */
+.dtr-submissions-page .dtr-pagination-wrap {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+.dtr-submissions-page .dtr-pagination-nav .page-link {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    -webkit-tap-highlight-color: rgba(0, 51, 102, 0.1);
+    touch-action: manipulation;
+}
+.dtr-submissions-page .dtr-pagination-nav .page-item.active .page-link {
+    font-weight: 600;
+}
+
+/* ==========================================
+   MOBILE: Pagination & modal footer
+   ========================================== */
+@media (max-width: 576px) {
+    .dtr-submissions-page .dtr-pagination-wrap {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+        text-align: center;
+        padding: 0.75rem 1rem;
+    }
+    .dtr-submissions-page .dtr-pagination-info {
+        order: 1;
+    }
+    .dtr-submissions-page .dtr-pagination-nav {
+        order: 2;
+    }
+    .dtr-submissions-page .dtr-pagination-nav .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+}
+.dtr-submissions-page .dtr-modal-footer .btn {
+    min-height: 44px;
+    min-width: 88px;
+    padding: 0.5rem 1rem;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+@media (max-width: 767px) {
+    .dtr-submissions-page #viewDtrModal .modal-footer {
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+        padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+}

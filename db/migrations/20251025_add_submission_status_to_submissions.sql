@@ -1,0 +1,1 @@
+ALTER TABLE submissions ADD COLUMN submission_status ENUM('pending', 'approved', 'rejected', 'resubmitted') DEFAULT 'pending';

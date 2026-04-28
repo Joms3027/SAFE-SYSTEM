@@ -1,0 +1,421 @@
+# FP System Security Configuration
+# Main .htaccess file for root directory
+
+# Prevent directory listing and MultiViews (extensionless URIs must hit rewrite rules, not negotiation)
+Options -Indexes -MultiViews
+
+# Set default index file
+DirectoryIndex login.php
+
+# Follow symbolic links (if needed for development)
+Options +FollowSymLinks
+
+# Enable rewrite engine (if needed)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # DEPLOYMENT NOTE: Update RewriteBase to match your installation path
+    # Examples:
+    #   - Root deployment: RewriteBase /
+    #   - Subdirectory: RewriteBase /your-folder/
+    #   - Current (development): RewriteBase /SAFE_SYSTEM/FP/
+    # 
+    # ⚠️ IMPORTANT: Must match the URL path of this folder (XAMPP: /FP/). Use / for document-root deploy.
+    RewriteBase /FP/
+    
+    # Force HTTPS in production (uncomment when using SSL)
+    # ⚠️ IMPORTANT: Uncomment these lines after SSL certificate is configured
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    
+    # Block suspicious query strings (before other rewrites)
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} proc/self/environ [OR]
+    RewriteCond %{QUERY_STRING} mosConfig_[a-zA-Z_]{1,21}(=|\%3D) [OR]
+    RewriteCond %{QUERY_STRING} base64_encode.*\(.*\) [OR]
+    RewriteCond %{QUERY_STRING} (<|%3C).*iframe.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+    
+    # Block access to hidden files and directories
+    RewriteRule ^\. - [F,L]
+    
+    # CRITICAL: Skip rewrite for static assets FIRST (CSS, JS, images, fonts, etc.)
+    # This must be before any other rewrite rules to prevent CSS/JS from being processed as PHP
+    RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|otf|eot|json|xml|pdf|mp3|mp4|avi|mov|wmv|flv|swf)$ [NC]
+    RewriteRule ^ - [L]
+    
+    # Skip rewrite rules for API files (they need to be accessed directly).
+    # IMPORTANT: Do not 301-strip .php for these — POST + fetch() would become GET and lose the body (Invalid action).
+    RewriteCond %{REQUEST_URI} ^.*/(includes/)?(notifications_api|chat_api|calendar_api)\.php [NC]
+    RewriteRule ^ - [L]
+    
+    # Remove .php extension from URLs (external redirect)
+    # This ensures URLs don't show .php in the browser address bar
+    # Only redirect if the request is for an actual PHP file
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+([^\s?]*?)\.php[\s?] [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    # QSA preserves query string (e.g. ajax=1) — without it, 301 strips ?params and breaks fetch()/JSON
+    RewriteRule ^ /%1 [R=301,L,QSA]
+    
+    # Internal rewrite from /file to /file.php (if file exists)
+    # Skip if the request is for an existing file
+    RewriteCond %{REQUEST_FILENAME} !-f
+    # Skip if the request is for an existing directory
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Append .php if that file exists (use ".php" not "\.php" — backslashes in Win paths break "\.php" tests)
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    # Rewrite the request to include .php extension
+    RewriteRule ^(.*)$ $1.php [L]
+    
+    # Handle trailing slash - redirect to index.php if directory
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteCond %{REQUEST_URI} !/$
+    RewriteRule ^(.*)$ $1/ [L,R=301]
+</IfModule>
+
+# Protect sensitive files
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|md|bak|config|dist|env)$">
+    <IfVersion < 2.4>
+        Order Allow,Deny
+        Deny from all
+    </IfVersion>
+    <IfVersion >= 2.4>
+        Require all denied
+    </IfVersion>
+</FilesMatch>
+
+# Protect config files
+<FilesMatch "^(config\.php|config\.template\.php|\.env)$">
+    <IfVersion < 2.4>
+        Order Allow,Deny
+        Deny from all
+    </IfVersion>
+    <IfVersion >= 2.4>
+        Require all denied
+    </IfVersion>
+</FilesMatch>
+
+# PHP Security and Performance Settings
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log storage/logs/php_errors.log
+    
+    # Performance optimizations
+    php_value realpath_cache_size 4096K
+    php_value realpath_cache_ttl 600
+    php_value memory_limit 256M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    
+    # OPcache settings (if available)
+    php_flag opcache.enable On
+    php_value opcache.memory_consumption 128
+    php_value opcache.interned_strings_buffer 8
+    php_value opcache.max_accelerated_files 10000
+    php_value opcache.revalidate_freq 2
+    php_flag opcache.fast_shutdown On
+    
+    # Session optimizations
+    php_value session.gc_probability 1
+    php_value session.gc_divisor 100
+    php_value session.gc_maxlifetime 3600
+    php_flag session.cookie_httponly On
+    php_flag session.use_strict_mode On
+    
+    # Disable expose_php for security
+    php_flag expose_php Off
+</IfModule>
+
+# PHP 8.x settings
+<IfModule mod_php8.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log storage/logs/php_errors.log
+    
+    # Performance optimizations
+    php_value realpath_cache_size 4096K
+    php_value realpath_cache_ttl 600
+    php_value memory_limit 256M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    
+    # OPcache settings
+    php_flag opcache.enable On
+    php_value opcache.memory_consumption 128
+    php_value opcache.interned_strings_buffer 8
+    php_value opcache.max_accelerated_files 10000
+    php_value opcache.revalidate_freq 2
+    php_flag opcache.fast_shutdown On
+    
+    # Session optimizations
+    php_value session.gc_probability 1
+    php_value session.gc_divisor 100
+    php_value session.gc_maxlifetime 3600
+    php_flag session.cookie_httponly On
+    php_flag session.use_strict_mode On
+    
+    # Disable expose_php for security
+    php_flag expose_php Off
+</IfModule>
+
+# Prevent access to version control directories
+<IfModule mod_rewrite.c>
+    RewriteRule ^(.*/)?\.git/ - [F,L]
+    RewriteRule ^(.*/)?\.svn/ - [F,L]
+    RewriteRule ^(.*/)?\.hg/ - [F,L]
+</IfModule>
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# CRITICAL: Prevent PHP from processing static files (must be before MIME types)
+# This ensures CSS, JS, and other static files are served correctly
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|otf|eot|json|xml|pdf|mp3|mp4|avi|mov|wmv|flv|swf)$">
+    # Remove any PHP handler
+    <IfModule mod_php7.c>
+        php_flag engine off
+    </IfModule>
+    <IfModule mod_php8.c>
+        php_flag engine off
+    </IfModule>
+    # Use default handler (not PHP)
+    SetHandler default-handler
+</FilesMatch>
+
+# MIME Type Configuration - Ensure correct MIME types for all file types
+<IfModule mod_mime.c>
+    # CSS - Force correct MIME type (must be first)
+    AddType text/css .css
+    # Ensure CSS files are not processed as PHP
+    <FilesMatch "\.css$">
+        SetHandler default-handler
+        ForceType text/css
+    </FilesMatch>
+    
+    # JavaScript
+    AddType text/javascript .js
+    AddType application/javascript .js
+    AddType application/x-javascript .js
+    # Ensure JS files are not processed as PHP
+    <FilesMatch "\.js$">
+        SetHandler default-handler
+        ForceType application/javascript
+    </FilesMatch>
+    
+    # JSON
+    AddType application/json .json
+    
+    # Fonts
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+    AddType application/font-woff .woff
+    AddType application/font-woff2 .woff2
+    AddType font/ttf .ttf
+    AddType font/otf .otf
+    AddType application/vnd.ms-fontobject .eot
+    
+    # Images
+    AddType image/png .png
+    AddType image/jpeg .jpg .jpeg
+    AddType image/gif .gif
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
+    AddType image/x-icon .ico
+    
+    # HTML
+    AddType text/html .html .htm
+    
+    # XML
+    AddType application/xml .xml
+    AddType text/xml .xml
+</IfModule>
+
+# Prevent clickjacking
+<IfModule mod_headers.c>
+    # Skip security headers for download files - must be BEFORE the "always set" directives
+    <Files "download_template.php">
+        Header unset X-Frame-Options
+        Header unset X-Content-Type-Options  
+        Header unset X-XSS-Protection
+        Header unset Referrer-Policy
+        Header unset Cache-Control
+        Header unset Pragma
+        Header unset Expires
+    </Files>
+    <Files "generate_tardiness_report.php">
+        Header unset X-Frame-Options
+        Header unset X-Content-Type-Options
+        Header unset X-XSS-Protection
+        Header unset Referrer-Policy
+        Header unset Cache-Control
+        Header unset Pragma
+        Header unset Expires
+    </Files>
+    <Files "download.php">
+        Header unset X-Frame-Options
+        Header unset X-Content-Type-Options
+        Header unset X-XSS-Protection
+        Header unset Referrer-Policy
+        Header unset Cache-Control
+        Header unset Pragma
+        Header unset Expires
+    </Files>
+    
+    # Set security headers for all other PHP files
+    Header always set X-Frame-Options "SAMEORIGIN" env=!skip_security_headers
+    Header always set X-Content-Type-Options "nosniff" env=!skip_security_headers
+    Header always set X-XSS-Protection "1; mode=block" env=!skip_security_headers
+    Header always set Referrer-Policy "strict-origin-when-cross-origin" env=!skip_security_headers
+    
+    # Set skip flag for download files
+    SetEnvIf Request_URI "(download_template|generate_tardiness_report|download)\.php$" skip_security_headers
+</IfModule>
+
+# Enable Gzip compression (if mod_deflate is available)
+<IfModule mod_deflate.c>
+    # Compress HTML, CSS, JavaScript, Text, XML and fonts
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE text/javascript application/javascript application/json
+    AddOutputFilterByType DEFLATE application/x-javascript application/xhtml+xml
+    AddOutputFilterByType DEFLATE font/opentype font/otf font/ttf font/woff font/woff2
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE image/svg+xml image/x-icon
+    
+    # Compress PHP output (but not download files or API responses)
+    <FilesMatch "\.php$">
+        # Don't compress download files (they're binary)
+        SetEnvIfNoCase Request_URI "(download_template|generate_tardiness_report|download)\.php$" no-gzip
+        SetOutputFilter DEFLATE env=!no-gzip
+    </FilesMatch>
+    
+    # Don't compress already compressed files
+    SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|zip|gz|bz2|rar|7z)$ no-gzip dont-vary
+    SetEnvIfNoCase Request_URI \.(?:mp3|mp4|avi|mov|wmv|flv|swf)$ no-gzip dont-vary
+    
+    # Handle browser bugs
+    BrowserMatch ^Mozilla/4 gzip-only-text/html
+    BrowserMatch ^Mozilla/4\.0[678] no-gzip
+    BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+    
+    # Set compression level (1-9, 6 is a good balance)
+    DeflateCompressionLevel 6
+</IfModule>
+
+# Cache control for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Default: 1 week
+    ExpiresDefault "access plus 1 week"
+    
+    # HTML: No cache (dynamic content)
+    ExpiresByType text/html "access plus 0 seconds"
+    
+    # Images: 1 year
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType image/vnd.microsoft.icon "access plus 1 year"
+    
+    # CSS and JavaScript: 1 year (use cache busting with version query strings)
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType application/x-javascript "access plus 1 year"
+    
+    # Fonts: 1 year
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+    
+    # Data files
+    ExpiresByType application/json "access plus 0 seconds"
+    ExpiresByType application/xml "access plus 0 seconds"
+</IfModule>
+
+# Cache-Control Headers for better performance
+<IfModule mod_headers.c>
+    # CSS files - ensure correct Content-Type and caching
+    <FilesMatch "\.css$">
+        Header set Content-Type "text/css; charset=UTF-8"
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # JavaScript files - ensure correct Content-Type and caching
+    <FilesMatch "\.js$">
+        Header set Content-Type "application/javascript; charset=UTF-8"
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Images - long cache
+    <FilesMatch "\.(gif|jpg|jpeg|png|webp|svg|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Fonts - long cache with CORS
+    <FilesMatch "\.(ttf|otf|woff|woff2|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+    
+    # PHP files - no cache (except download files which set their own cache headers)
+    <FilesMatch "\.php$">
+        SetEnvIfNoCase Request_URI "(download_template|generate_tardiness_report|download)\.php$" skip_cache_headers
+        Header set Cache-Control "no-cache, no-store, must-revalidate" env=!skip_cache_headers
+        Header set Pragma "no-cache" env=!skip_cache_headers
+        Header set Expires "0" env=!skip_cache_headers
+    </FilesMatch>
+    
+    # Vary header for compression
+    Header append Vary Accept-Encoding
+</IfModule>
+
+# Keep-Alive for connection reuse
+<IfModule mod_headers.c>
+    Header set Connection keep-alive
+</IfModule>
+
+# HTTP/2 Server Push (if supported)
+<IfModule mod_http2.c>
+    # Enable HTTP/2 Server Push for critical resources
+    H2Push on
+    H2PushPriority * After 16
+    H2PushPriority text/css Before
+    H2PushPriority image/jpeg After 32
+    H2PushPriority image/png After 32
+    H2PushPriority application/javascript Interleaved
+</IfModule>
+
+# ETags for better caching
+<IfModule mod_headers.c>
+    # Remove ETags (we use Cache-Control instead)
+    Header unset ETag
+</IfModule>
+FileETag None
+
+# Disable server signature
+ServerSignature Off
+
+# Enable HTTP/2 Early Hints (if available)
+<IfModule mod_http2.c>
+    H2EarlyHints on
+</IfModule>
+
+# Optimize for mobile devices
+<IfModule mod_headers.c>
+    # Preload critical resources (commented out - may cause issues on some hosts)
+    # Header add Link "</assets/vendor/bootstrap/css/bootstrap.min.css>; rel=preload; as=style"
+    # Header add Link "</assets/css/style.css>; rel=preload; as=style"
+</IfModule>
+
