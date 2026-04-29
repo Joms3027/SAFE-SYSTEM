@@ -117,7 +117,7 @@ if (!function_exists('tarf_get_form_options')) {
             'Dr. Lota A. Creencia, VPRIDE',
             'Dr. Lita B. Sopsop, VPSAS',
             'Dr. Amabel S. Liao, University President',
-            'Jomari B. Recalde',
+            // 'Jomari B. Recalde',
         ];
 
         $fundingCharged = [
