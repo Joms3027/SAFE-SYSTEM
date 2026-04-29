@@ -1,6 +1,6 @@
 <?php
 /**
- * TARF — Applicable endorser queue (after supervisor endorsement).
+ * TARF / NTARF — Applicable endorser queue (parallel with supervisor and Budget/Accounting when required).
  */
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';

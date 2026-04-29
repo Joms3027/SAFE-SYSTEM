@@ -183,7 +183,6 @@ if (!function_exists('tarf_ntarf_docx_status_notes')) {
         require_once __DIR__ . '/ntarf_form_options.php';
         require_once __DIR__ . '/tarf_workflow.php';
 
-        $opts = ntarf_get_form_options();
         $dash = tarf_official_order_nonempty(null);
 
         $supName = !empty($row['supervisor_endorsed_by'])
@@ -194,9 +193,10 @@ if (!function_exists('tarf_ntarf_docx_status_notes')) {
             ? tarf_display_name_for_user((int) $row['president_endorsed_by'], $db) : '';
 
         $fundCertLabel = $dash;
-        if (!empty($form['endorser_fund_availability'])
-            && isset($opts['fund_endorser_role'][$form['endorser_fund_availability']])) {
-            $fundCertLabel = $opts['fund_endorser_role'][$form['endorser_fund_availability']];
+        $fundKey = trim((string) ($form['endorser_fund_availability'] ?? ''));
+        if ($fundKey !== '') {
+            $certName = tarf_fund_availability_certifier_display_name($db, $row, $form);
+            $fundCertLabel = $certName !== '' ? $certName : $dash;
         }
 
         $status = (string) ($row['status'] ?? '');
@@ -237,7 +237,7 @@ if (!function_exists('tarf_ntarf_docx_status_notes')) {
 
         $fundParts = [];
         if ($fundCertLabel !== $dash) {
-            $fundParts[] = 'Certification requested: ' . $fundCertLabel;
+            $fundParts[] = 'Fund availability (designated certifier): ' . $fundCertLabel;
         }
         if ($statusNotesFund !== $dash && trim($statusNotesFund) !== '') {
             $fundParts[] = $statusNotesFund;

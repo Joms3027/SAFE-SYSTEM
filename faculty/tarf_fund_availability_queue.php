@@ -6,7 +6,6 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/database.php';
 require_once __DIR__ . '/../includes/tarf_workflow.php';
-require_once __DIR__ . '/../includes/tarf_form_options.php';
 require_once __DIR__ . '/../includes/tarf_queue_filter.php';
 require_once __DIR__ . '/../includes/tarf_endorser_history.php';
 
@@ -25,8 +24,6 @@ if (!tarf_user_holds_fund_availability_designation($uid, $db)) {
     $_SESSION['error'] = 'This page is for accounts designated as University Budget Office or Officer in Charge University Accountant.';
     redirect(clean_url(getBasePath() . '/faculty/dashboard.php', getBasePath()));
 }
-
-$tarfOpts = tarf_get_form_options();
 
 $pending = [];
 $tableOk = false;
@@ -85,13 +82,16 @@ include_navigation();
                     <?php tarf_queue_filter_bar(); ?>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light"><tr><th>ID</th><th>Requester</th><th>Department</th><th>Fund route</th><th>Submitted</th><th></th></tr></thead>
+                        <thead class="table-light"><tr><th>ID</th><th>Requester</th><th>Department</th><th>Designated certifier</th><th>Submitted</th><th></th></tr></thead>
                         <tbody>
                             <?php foreach ($pending as $r):
                                 $fd = json_decode($r['form_data'], true);
                                 $fk = is_array($fd) ? trim((string) ($fd['endorser_fund_availability'] ?? '')) : '';
-                                $fundLab = ($fk !== '' && isset($tarfOpts['fund_endorser_role'][$fk]))
-                                    ? $tarfOpts['fund_endorser_role'][$fk] : ($fk !== '' ? $fk : '—');
+                                $fundLab = '—';
+                                if ($fk !== '') {
+                                    $cn = tarf_fund_availability_certifier_display_name($db, $r, is_array($fd) ? $fd : []);
+                                    $fundLab = $cn !== '' ? $cn : '—';
+                                }
                                 $name = trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''));
                                 $viewUrl = clean_url($basePath . '/faculty/tarf_request_view.php?id=' . (int) $r['id'], $basePath);
                                 ?>

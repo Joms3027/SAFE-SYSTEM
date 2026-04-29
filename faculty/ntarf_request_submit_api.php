@@ -1,6 +1,7 @@
 <?php
 /**
  * Submit [NON-TRAVEL] Activity Request Form (NTARF).
+ * Routing matches TARF: supervisor (pardon opener), applicable endorser, and Budget or Accounting when funding certification applies — parallel endorsements (pending_joint), then President (pending_president).
  */
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';

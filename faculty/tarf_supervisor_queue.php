@@ -1,6 +1,6 @@
 <?php
 /**
- * TARF — Supervisor (pardon opener) queue: endorse before applicable endorser.
+ * TARF / NTARF — Supervisor (pardon opener) queue (parallel with applicable endorser and Budget/Accounting when required).
  */
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';

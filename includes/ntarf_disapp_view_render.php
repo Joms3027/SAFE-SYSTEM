@@ -62,10 +62,8 @@ if (!function_exists('ntarf_render_disapp_card_html')) {
             }
         }
 
-        $fundCertLabel = '—';
-        if (!empty($form['endorser_fund_availability']) && isset($opts['fund_endorser_role'][$form['endorser_fund_availability']])) {
-            $fundCertLabel = tarf_disapp_escape($opts['fund_endorser_role'][$form['endorser_fund_availability']]);
-        }
+        $fundCertDisplay = tarf_fund_availability_certifier_display_name($db, $row, $form);
+        $fundCertLabel = $fundCertDisplay !== '' ? tarf_disapp_escape($fundCertDisplay) : '—';
 
         $totalAmt = isset($form['total_estimated_amount']) && $form['total_estimated_amount'] !== ''
             ? tarf_disapp_escape((string) $form['total_estimated_amount'])
@@ -305,7 +303,7 @@ if (!function_exists('ntarf_render_disapp_card_html')) {
 
         $fundParts = [];
         if ($fundCertLabel !== '—') {
-            $fundParts[] = 'Certification requested: ' . strip_tags($fundCertLabel);
+            $fundParts[] = 'Fund availability (designated certifier): ' . strip_tags($fundCertLabel);
         }
         if ($statusNotesFund !== '—' && trim($statusNotesFund) !== '') {
             $fundParts[] = $statusNotesFund;

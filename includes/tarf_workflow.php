@@ -409,6 +409,40 @@ if (!function_exists('tarf_user_can_president_act')) {
     }
 }
 
+if (!function_exists('tarf_fund_availability_certifier_display_name')) {
+    /**
+     * Display name for Budget/Accounting fund certification — the designated portal user, not the role label
+     * (e.g. not "Budget (Fund 101, Fund 164)"). Prefer the actual endorser when present; else routing target; else lookup by fund key.
+     */
+    function tarf_fund_availability_certifier_display_name(PDO $db, array $row, array $form): string
+    {
+        $key = trim((string) ($form['endorser_fund_availability'] ?? ''));
+        if ($key === '') {
+            return '';
+        }
+        $byEndorse = (int) ($row['fund_availability_endorsed_by'] ?? 0);
+        if ($byEndorse > 0) {
+            $n = tarf_display_name_for_user($byEndorse, $db);
+            if ($n !== '') {
+                return $n;
+            }
+        }
+        $tid = (int) ($row['fund_availability_target_user_id'] ?? 0);
+        if ($tid > 0) {
+            $n = tarf_display_name_for_user($tid, $db);
+            if ($n !== '') {
+                return $n;
+            }
+        }
+        $resolved = tarf_resolve_fund_availability_endorser_user_id($key, $db);
+        if ($resolved !== null && $resolved > 0) {
+            return tarf_display_name_for_user($resolved, $db);
+        }
+
+        return '';
+    }
+}
+
 if (!function_exists('tarf_display_name_for_user')) {
     function tarf_display_name_for_user(?int $userId, PDO $db): string
     {

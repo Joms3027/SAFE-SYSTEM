@@ -5,7 +5,7 @@
  * extra rows on the president queue for reference (case-insensitive match on faculty_profiles.key_official).
  */
 return [
-    'viewer_user_id' => 26,
+    'viewer_user_id' => 349,
     'employee_key_official_labels' => [
         'PRESIDENT',
     ],

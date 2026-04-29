@@ -13,5 +13,4 @@ return [
     'Dr. Lota A. Creencia, VPRIDE' => 55,
     'Dr. Lita B. Sopsop, VPSAS' => 491,
     'Dr. Amabel S. Liao, University President' => 349,
-    'Jomari B. Recalde' => 26,
 ];
