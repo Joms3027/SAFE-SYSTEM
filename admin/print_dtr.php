@@ -230,6 +230,8 @@ try {
             return strcmp($a['log_date'] ?? '', $b['log_date'] ?? '');
         });
     }
+
+    $printDtrApprovedTarfNtarfIdx = staff_dtr_approved_tarf_ntarf_indexes_for_employee($db, $employee_id);
     
     function isLeaveDtrRow($timeIn, $lunchOut, $lunchIn, $timeOut, $remarks = null) {
         if ($remarks !== null && strtoupper(trim((string) $remarks)) === 'LEAVE') {
@@ -244,7 +246,7 @@ try {
     }
 
     /** Detect TARF/NTARF row (calendar TARF or approved tarf_ntarf pardon). */
-    function isTarfDtrRow(array $log) {
+    function isTarfDtrRow(array $log, ?array $ntarfApprovedIndexes = null) {
         $r = (string) ($log['remarks'] ?? '');
         if (!empty($log['tarf_id']) && strpos($r, 'TARF:') === 0) {
             return true;
@@ -259,6 +261,9 @@ try {
             if (strtoupper(trim((string) ($log[$f] ?? ''))) === 'TARF') {
                 return true;
             }
+        }
+        if ($ntarfApprovedIndexes !== null && staff_dtr_log_matches_approved_tarf_ntarf($log, $ntarfApprovedIndexes)) {
+            return true;
         }
         return false;
     }
@@ -406,8 +411,12 @@ try {
     }
 
     // Helper function to check if entry is complete
-    function isEntryComplete($timeIn, $lunchOut, $lunchIn, $timeOut, $otIn, $otOut, $remarks = null) {
+    function isEntryComplete($timeIn, $lunchOut, $lunchIn, $timeOut, $otIn, $otOut, $remarks = null, ?array $logForTarfNtarf = null, ?array $ntarfApprovedIndexes = null) {
         if (isLeaveDtrRow($timeIn, $lunchOut, $lunchIn, $timeOut, $remarks)) {
+            return true;
+        }
+        if ($logForTarfNtarf !== null && $ntarfApprovedIndexes !== null
+            && staff_dtr_log_matches_approved_tarf_ntarf($logForTarfNtarf, $ntarfApprovedIndexes)) {
             return true;
         }
         // TARF/NTARF rows are treated as complete (credited from TARF_HOURS_CREDIT or official base)
@@ -613,10 +622,10 @@ try {
     }
     
     // Helper function to calculate comprehensive log data (matching modal calculations)
-    function calculateLogData($log, $official, $hasOfficialTime, $officialHasLunch = true) {
+    function calculateLogData($log, $official, $hasOfficialTime, $officialHasLunch = true, ?array $ntarfApprovedIndexes = null) {
         $isHoliday = dtr_row_is_holiday($log);
         $isLeave = isLeaveDtrRow($log['time_in'] ?? null, $log['lunch_out'] ?? null, $log['lunch_in'] ?? null, $log['time_out'] ?? null, $log['remarks'] ?? null);
-        $isTarf = isTarfDtrRow($log);
+        $isTarf = isTarfDtrRow($log, $ntarfApprovedIndexes);
         if ($isTarf) {
             $tarfHours = tarfRowCreditHours($log, $official, $officialHasLunch);
             return [
@@ -841,10 +850,10 @@ try {
     }
     
     // Legacy function for backward compatibility
-    function calculateTardinessAbsentLate($log, $official) {
+    function calculateTardinessAbsentLate($log, $official, ?array $ntarfApprovedIndexes = null) {
         $hasOfficialTime = ($official['time_in'] !== '08:00:00' || $official['lunch_out'] !== '12:00:00' || 
                            $official['lunch_in'] !== '13:00:00' || $official['time_out'] !== '17:00:00');
-        $data = calculateLogData($log, $official, $hasOfficialTime, true);
+        $data = calculateLogData($log, $official, $hasOfficialTime, true, $ntarfApprovedIndexes);
         return [
             'absent_hours' => $data['absent_hours'],
             'late_hours' => $data['late_minutes'] / 60,
@@ -875,7 +884,9 @@ try {
             $log['time_out'],
             $log['ot_in'],
             $log['ot_out'],
-            $log['remarks'] ?? null
+            $log['remarks'] ?? null,
+            $log,
+            $printDtrApprovedTarfNtarfIdx
         );
         
         // Get official times for this log date (from_db = true when Employee Management would show official time)
@@ -886,10 +897,10 @@ try {
 
         $isHolidayRow = dtr_row_is_holiday($log);
         $isLeaveRow = isLeaveDtrRow($log['time_in'] ?? null, $log['lunch_out'] ?? null, $log['lunch_in'] ?? null, $log['time_out'] ?? null, $log['remarks'] ?? null);
-        $isTarfRowTotals = isTarfDtrRow($log);
+        $isTarfRowTotals = isTarfDtrRow($log, $printDtrApprovedTarfNtarfIdx);
 
         // Calculate comprehensive log data
-        $logData = calculateLogData($log, $official, $hasOfficialTime, $hasLunch);
+        $logData = calculateLogData($log, $official, $hasOfficialTime, $hasLunch, $printDtrApprovedTarfNtarfIdx);
         
         // Tardiness (late), undertime, and absent — separate totals (hours)
         $totalLateHoursForDays += ($logData['late_minutes'] / 60);
@@ -1222,7 +1233,7 @@ try {
 
                     $isHolidayRow = dtr_row_is_holiday($log);
                     $isLeaveRow = isLeaveDtrRow($log['time_in'] ?? null, $log['lunch_out'] ?? null, $log['lunch_in'] ?? null, $log['time_out'] ?? null, $log['remarks'] ?? null);
-                    $isTarfRow = isTarfDtrRow($log);
+                    $isTarfRow = isTarfDtrRow($log, $printDtrApprovedTarfNtarfIdx);
                     $isComplete = isEntryComplete(
                         $log['time_in'], 
                         $log['lunch_out'], 
@@ -1230,7 +1241,9 @@ try {
                         $log['time_out'],
                         $log['ot_in'],
                         $log['ot_out'],
-                        $log['remarks'] ?? null
+                        $log['remarks'] ?? null,
+                        $log,
+                        $printDtrApprovedTarfNtarfIdx
                     );
                     // TARF/NTARF: show TARF in time cells; rendered hours = TARF_HOURS_CREDIT (or official base / 8)
                     if ($isTarfRow) {
@@ -1260,7 +1273,7 @@ try {
                     }
                     
                     // Calculate comprehensive log data
-                    $logData = calculateLogData($log, $official, $hasOfficialTime, $hasLunch);
+                    $logData = calculateLogData($log, $official, $hasOfficialTime, $hasLunch, $printDtrApprovedTarfNtarfIdx);
                     
                     // Calculate hour (day) - convert hours to days (always show, even if incomplete)
                     $hourDay = $hours !== null ? hoursToDays($hours) : 0;

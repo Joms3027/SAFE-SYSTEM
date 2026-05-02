@@ -83,6 +83,87 @@ if (!function_exists('staff_dtr_row_is_system_generated_holiday_log')) {
     }
 }
 
+/**
+ * Build lookups for attendance rows covered by ANY approved TARF/NTARF pardon
+ * (multiple requests per log/date: any approved counts; covers anchor log_id + covered dates JSON).
+ *
+ * @return array{by_date: array<string,true>, by_log_id: array<int,true>}
+ */
+if (!function_exists('staff_dtr_approved_tarf_ntarf_indexes_for_employee')) {
+    function staff_dtr_approved_tarf_ntarf_indexes_for_employee(PDO $db, $employee_id) {
+        $byDate = [];
+        $byLogId = [];
+
+        try {
+            $chk = $db->query("SHOW COLUMNS FROM pardon_requests LIKE 'pardon_type'");
+            if (!$chk || $chk->rowCount() < 1) {
+                return ['by_date' => $byDate, 'by_log_id' => $byLogId];
+            }
+            $chkCd = $db->query("SHOW COLUMNS FROM pardon_requests LIKE 'pardon_covered_dates'");
+            $hasCovered = $chkCd && $chkCd->rowCount() > 0;
+
+            $sel = $hasCovered
+                ? 'SELECT log_id, log_date, pardon_covered_dates FROM pardon_requests WHERE employee_id = ? AND status = ? AND pardon_type = ?'
+                : 'SELECT log_id, log_date FROM pardon_requests WHERE employee_id = ? AND status = ? AND pardon_type = ?';
+            $stmt = $db->prepare($sel);
+            $stmt->execute([(string) $employee_id, 'approved', 'tarf_ntarf']);
+            $pushNorm = static function (&$map, $d) {
+                if ($d === null || $d === '') {
+                    return;
+                }
+                $ts = strtotime(trim((string) $d));
+                if ($ts === false) {
+                    return;
+                }
+                $norm = date('Y-m-d', $ts);
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $norm)) {
+                    $map[$norm] = true;
+                }
+            };
+            while ($pr = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $lid = (int) ($pr['log_id'] ?? 0);
+                if ($lid > 0) {
+                    $byLogId[$lid] = true;
+                }
+                $pushNorm($byDate, $pr['log_date'] ?? null);
+                if ($hasCovered && !empty($pr['pardon_covered_dates'])) {
+                    $decoded = json_decode($pr['pardon_covered_dates'], true);
+                    if (is_array($decoded)) {
+                        foreach ($decoded as $piece) {
+                            $pushNorm($byDate, $piece);
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) { /* schema / query variance */ }
+
+        return ['by_date' => $byDate, 'by_log_id' => $byLogId];
+    }
+}
+
+if (!function_exists('staff_dtr_log_matches_approved_tarf_ntarf')) {
+    /**
+     * True when this attendance log row is tied to ANY approved tarf_ntarf pardon by log id or log_date (incl. pardon_covered_dates).
+     *
+     * @param array{by_date?: array<string,bool>, by_log_id?: array<int,bool>} $approvedIndexes
+     */
+    function staff_dtr_log_matches_approved_tarf_ntarf(array $log, array $approvedIndexes) {
+        $byDate = isset($approvedIndexes['by_date']) && is_array($approvedIndexes['by_date'])
+            ? $approvedIndexes['by_date'] : [];
+        $byLogId = isset($approvedIndexes['by_log_id']) && is_array($approvedIndexes['by_log_id'])
+            ? $approvedIndexes['by_log_id'] : [];
+        $logPk = (int) ($log['id'] ?? 0);
+        if ($logPk > 0 && !empty($byLogId[$logPk])) {
+            return true;
+        }
+        if (empty($log['log_date'])) {
+            return false;
+        }
+        $logDateStr = date('Y-m-d', strtotime($log['log_date']));
+        return $logDateStr !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $logDateStr) && !empty($byDate[$logDateStr]);
+    }
+}
+
 /** Employee actually worked on a holiday (real punches, not system template). */
 if (!function_exists('staff_dtr_row_has_real_holiday_attendance')) {
     function staff_dtr_row_has_real_holiday_attendance(array $row, $isHoliday) {
@@ -116,6 +197,8 @@ if (!function_exists('staff_dtr_row_has_any_punch')) {
  * @return array{logs: array, pardon_open_dates: array, official_regular: string, official_saturday: string, in_charge: string}
  */
 function staff_dtr_fetch_month_bundle(PDO $db, $employee_id, $date_from, $date_to) {
+    $ntarfApproved = staff_dtr_approved_tarf_ntarf_indexes_for_employee($db, $employee_id);
+
     $submittedDates = [];
     $tableCheck = $db->query("SHOW TABLES LIKE 'dtr_daily_submissions'");
     if ($tableCheck && $tableCheck->rowCount() > 0) {
@@ -188,9 +271,11 @@ function staff_dtr_fetch_month_bundle(PDO $db, $employee_id, $date_from, $date_t
         $isHalfDayHoliday = $isHoliday && !$hasHolidayAttendance && !empty($row['holiday_is_half_day']);
         $halfDayPeriod = ($row['holiday_half_day_period'] ?? 'morning') === 'afternoon' ? 'afternoon' : 'morning';
         $rowRemarksStr = (string) ($row['remarks'] ?? '');
+        $approvedTarfNtarfPardon = staff_dtr_log_matches_approved_tarf_ntarf($row, $ntarfApproved);
         $isTarfRow = ((!empty($row['tarf_id']) && strpos($rowRemarksStr, 'TARF:') === 0)
             || strpos($rowRemarksStr, 'TARF_HOURS_CREDIT:') !== false
-            || strtoupper(trim($rowRemarksStr)) === 'TARF');
+            || strtoupper(trim($rowRemarksStr)) === 'TARF'
+            || $approvedTarfNtarfPardon);
         if ($isLeave) {
             $timeInVal = $timeLOVal = $timeLIVal = $timeOutVal = 'LEAVE';
         } elseif ($isTarfRow) {

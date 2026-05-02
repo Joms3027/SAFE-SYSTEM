@@ -92,7 +92,7 @@ try {
     }
 
     /** Detect TARF/NTARF row (calendar TARF or approved tarf_ntarf pardon). */
-    function isTarfDtrRowAll(array $log) {
+    function isTarfDtrRowAll(array $log, ?array $ntarfApprovedIndexes = null) {
         $r = (string) ($log['remarks'] ?? '');
         if (!empty($log['tarf_id']) && strpos($r, 'TARF:') === 0) {
             return true;
@@ -107,6 +107,9 @@ try {
             if (strtoupper(trim((string) ($log[$f] ?? ''))) === 'TARF') {
                 return true;
             }
+        }
+        if ($ntarfApprovedIndexes !== null && staff_dtr_log_matches_approved_tarf_ntarf($log, $ntarfApprovedIndexes)) {
+            return true;
         }
         return false;
     }
@@ -125,8 +128,12 @@ try {
     }
 
     // Helper function to check if entry is complete (matches calculateLogHours shift rules)
-    function isEntryComplete($timeIn, $lunchOut, $lunchIn, $timeOut, $otIn, $otOut, $remarks = null, $officialHasLunch = true) {
+    function isEntryComplete($timeIn, $lunchOut, $lunchIn, $timeOut, $otIn, $otOut, $remarks = null, $officialHasLunch = true, ?array $logForTarfNtarf = null, ?array $ntarfApprovedIndexes = null) {
         if (isLeaveDtrRow($timeIn, $lunchOut, $lunchIn, $timeOut, $remarks)) {
+            return true;
+        }
+        if ($logForTarfNtarf !== null && $ntarfApprovedIndexes !== null
+            && staff_dtr_log_matches_approved_tarf_ntarf($logForTarfNtarf, $ntarfApprovedIndexes)) {
             return true;
         }
         // TARF/NTARF rows are treated as complete (credited from TARF_HOURS_CREDIT or official base)
@@ -632,7 +639,7 @@ try {
      * @param bool $fromDb True when employee_official_times applies (JS official_time.found)
      * @param bool $officialHasLunch Full-day vs half-day official schedule
      */
-    function calculateLogData($log, $official, $fromDb, $officialHasLunch) {
+    function calculateLogData($log, $official, $fromDb, $officialHasLunch, ?array $ntarfApprovedIndexes = null) {
         $r = $log['remarks'] ?? '';
         $isHoliday = !empty($log['holiday_id']) || !empty($log['holiday_title'])
             || (strpos($r, 'Holiday:') === 0 || strpos($r, 'Holiday (Half-day):') === 0
@@ -648,7 +655,7 @@ try {
             $log['time_out'] ?? null,
             $log['remarks'] ?? null
         );
-        $isTarf = isTarfDtrRowAll($log);
+        $isTarf = isTarfDtrRowAll($log, $ntarfApprovedIndexes);
 
         // Approved TARF/NTARF: credit hours from TARF_HOURS_CREDIT (else official base)
         if ($isTarf) {
@@ -901,8 +908,8 @@ try {
     }
     
     // Legacy function for backward compatibility (prefer calculateLogData with from_db + has_lunch)
-    function calculateTardinessAbsentLate($log, $official) {
-        $data = calculateLogData($log, $official, true, true);
+    function calculateTardinessAbsentLate($log, $official, ?array $ntarfApprovedIndexes = null) {
+        $data = calculateLogData($log, $official, true, true, $ntarfApprovedIndexes);
         return [
             'absent_hours' => $data['absent_hours'],
             'late_hours' => $data['late_minutes'] / 60,
@@ -1145,6 +1152,7 @@ try {
     <?php $empIndex = 0; foreach ($employees as $employee): $empIndex++; ?>
         <?php
         $logs = getEmployeeLogs($db, $employee['employee_id'], $date_from, $date_to);
+        $approvedTarfNtarfIdxEmp = staff_dtr_approved_tarf_ntarf_indexes_for_employee($db, $employee['employee_id']);
         
         // Get official times for the employee
         $stmt = $db->prepare("
@@ -1181,7 +1189,7 @@ try {
                 $log['time_out'] ?? null,
                 $log['remarks'] ?? null
             );
-            $isTarfRowTotals = isTarfDtrRowAll($log);
+            $isTarfRowTotals = isTarfDtrRowAll($log, $approvedTarfNtarfIdxEmp);
 
             $isComplete = isEntryComplete(
                 $log['time_in'],
@@ -1191,10 +1199,12 @@ try {
                 $log['ot_in'],
                 $log['ot_out'],
                 $log['remarks'] ?? null,
-                $hasLunch
+                $hasLunch,
+                $log,
+                $approvedTarfNtarfIdxEmp
             );
 
-            $logData = calculateLogData($log, $official, $fromDb, $hasLunch);
+            $logData = calculateLogData($log, $official, $fromDb, $hasLunch, $approvedTarfNtarfIdxEmp);
 
             $totalLateHoursForDays += ($logData['late_minutes'] / 60);
             $totalUndertimeHoursForDays += ($logData['undertime_minutes'] / 60);
@@ -1322,7 +1332,7 @@ try {
                                 $log['time_out'] ?? null,
                                 $log['remarks'] ?? null
                             );
-                            $isTarfRow = isTarfDtrRowAll($log);
+                            $isTarfRow = isTarfDtrRowAll($log, $approvedTarfNtarfIdxEmp);
                             $isComplete = isEntryComplete(
                                 $log['time_in'],
                                 $log['lunch_out'],
@@ -1331,7 +1341,9 @@ try {
                                 $log['ot_in'],
                                 $log['ot_out'],
                                 $log['remarks'] ?? null,
-                                $hasLunch
+                                $hasLunch,
+                                $log,
+                                $approvedTarfNtarfIdxEmp
                             );
 
                             if ($isTarfRow) {
@@ -1354,7 +1366,7 @@ try {
                                     $otMinRow = $oo - $oi;
                                 }
                             }
-                            $logData = calculateLogData($log, $official, $fromDb, $hasLunch);
+                            $logData = calculateLogData($log, $official, $fromDb, $hasLunch, $approvedTarfNtarfIdxEmp);
                             if ($hours !== null && $logData['has_official_time'] && $otMinRow === 0) {
                                 $officialBase = getOfficialBaseHours($official, $hasLunch);
                                 if ($officialBase !== null && $hours > $officialBase) {

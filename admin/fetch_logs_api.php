@@ -326,6 +326,8 @@ try {
         $stmt->execute($params);
         $logs = [];
 
+        $ntarfApprovedIdx = staff_dtr_approved_tarf_ntarf_indexes_for_employee($db, $employee_id);
+
         $fmtTime = function ($t) {
             if (!$t) {
                 return null;
@@ -462,9 +464,11 @@ try {
             $isHalfDayHoliday = $isHoliday && !$hasHolidayAttendance && !empty($row['holiday_is_half_day']);
             $halfDayPeriod = ($row['holiday_half_day_period'] ?? 'morning') === 'afternoon' ? 'afternoon' : 'morning';
             $rowRemarksStr = (string) ($row['remarks'] ?? '');
+            $approvedTarfNtarfPardon = staff_dtr_log_matches_approved_tarf_ntarf($row, $ntarfApprovedIdx);
             $isTarfRow = ((!empty($row['tarf_id']) && strpos($rowRemarksStr, 'TARF:') === 0)
                 || strpos($rowRemarksStr, 'TARF_HOURS_CREDIT:') !== false
-                || strtoupper(trim($rowRemarksStr)) === 'TARF');
+                || strtoupper(trim($rowRemarksStr)) === 'TARF'
+                || $approvedTarfNtarfPardon);
             if ($isLeave) {
                 $timeInVal = $timeLOVal = $timeLIVal = $timeOutVal = 'LEAVE';
             } elseif ($isTarfRow) {
