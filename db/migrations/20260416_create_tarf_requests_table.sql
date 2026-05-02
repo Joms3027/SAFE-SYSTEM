@@ -1,4 +1,5 @@
--- Travel Activity Request Form (TARF) — employee submissions; form mirrors Google Form 3.2 / DISAPP 2.2D layout on view.
+-- TARF / NTARF submissions (shared table). Travel (TARF) and non-travel (NTARF) rows differ by JSON form_kind (`tarf` | `ntarf`).
+-- Run: php db/migrations/run_tarf_ntarf_migrations.php
 
 CREATE TABLE IF NOT EXISTS `tarf_requests` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

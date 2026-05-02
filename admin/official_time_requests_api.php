@@ -260,7 +260,7 @@ try {
                     FROM official_time_requests otr
                     JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
                     JOIN users u ON u.id = fp.user_id
-                    WHERE otr.status = 'pending_dean' AND fp.department = ?";
+                    WHERE otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
                 $deanListParams = [$deanDepartment];
                 if ($currentUserEmployeeId !== '') {
                     $deanListSql .= " AND otr.employee_id != ?";
@@ -320,7 +320,7 @@ try {
                     FROM official_time_requests otr
                     JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
                     JOIN users u ON u.id = fp.user_id
-                    WHERE otr.status = 'pending_dean' AND fp.department = ?";
+                    WHERE otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
                 $deanGroupParams = [$deanDepartment];
                 if ($currentUserEmployeeId !== '') {
                     $deanGroupSql .= " AND otr.employee_id != ?";
@@ -386,7 +386,7 @@ try {
             if ($isDean && $deanDepartment !== '') {
                 $deanSql = "SELECT otr.id FROM official_time_requests otr
                     JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
-                    WHERE otr.id = ? AND otr.status = 'pending_dean' AND fp.department = ?";
+                    WHERE otr.id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
                 $deanParams = [$id, $deanDepartment];
                 if ($currentUserEmployeeId !== '') {
                     $deanSql .= " AND otr.employee_id != ?";
@@ -432,7 +432,7 @@ try {
                 }
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr
                     JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
-                    WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND fp.department = ?");
+                    WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)");
                 $stmt->execute([$employee_id, $deanDepartment]);
             } else {
                 if (!in_array($employee_id, $scopeEmployeeIds)) {
@@ -474,7 +474,7 @@ try {
             $reqEmp = $reqStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($isDean && $deanDepartment !== '') {
-                $deanSql = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.id = ? AND otr.status = 'pending_dean' AND fp.department = ?";
+                $deanSql = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
                 $deanParams = [$id, $deanDepartment];
                 if ($currentUserEmployeeId !== '') {
                     $deanSql .= " AND otr.employee_id != ?";
@@ -536,7 +536,7 @@ try {
                     echo json_encode(['success' => false, 'message' => 'You cannot reject your own official time.']);
                     exit;
                 }
-                $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND fp.department = ?");
+                $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)");
                 $stmt->execute([$employee_id, $deanDepartment]);
             } else {
                 if (!in_array($employee_id, $scopeEmployeeIds)) {
@@ -581,7 +581,7 @@ try {
                 exit;
             }
             if ($isDean && $deanDepartment !== '') {
-                $deanSql = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.status = 'pending_dean' AND fp.department = ?";
+                $deanSql = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
                 $deanParams = [$deanDepartment];
                 if ($currentUserEmployeeId !== '') {
                     $deanSql .= " AND otr.employee_id != ?";

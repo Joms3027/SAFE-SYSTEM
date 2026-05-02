@@ -91,14 +91,37 @@ try {
         return false;
     }
 
-    /** Calendar / endorsed TARF mirrored into attendance_logs (remarks start with TARF:). */
-    function dtr_row_is_tarf_mirror_log(array $log) {
-        if (empty($log['tarf_id'])) {
-            return false;
-        }
+    /** Detect TARF/NTARF row (calendar TARF or approved tarf_ntarf pardon). */
+    function isTarfDtrRowAll(array $log) {
         $r = (string) ($log['remarks'] ?? '');
+        if (!empty($log['tarf_id']) && strpos($r, 'TARF:') === 0) {
+            return true;
+        }
+        if (strpos($r, 'TARF_HOURS_CREDIT:') !== false) {
+            return true;
+        }
+        if (strtoupper(trim($r)) === 'TARF') {
+            return true;
+        }
+        foreach (['time_in', 'lunch_out', 'lunch_in', 'time_out'] as $f) {
+            if (strtoupper(trim((string) ($log[$f] ?? ''))) === 'TARF') {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        return strpos($r, 'TARF:') === 0;
+    /** Hours credited for a TARF row (TARF_HOURS_CREDIT remark, else official base, else 8). */
+    function tarfRowCreditHoursAll(array $log, $official, $officialHasLunch) {
+        $r = (string) ($log['remarks'] ?? '');
+        if (preg_match('/TARF_HOURS_CREDIT:([\d.]+)/', $r, $m)) {
+            $val = (float) $m[1];
+            if ($val > 0) {
+                return round($val, 2);
+            }
+        }
+        $base = getOfficialBaseHours($official, $officialHasLunch);
+        return $base !== null ? $base : 8.0;
     }
 
     // Helper function to check if entry is complete (matches calculateLogHours shift rules)
@@ -106,8 +129,17 @@ try {
         if (isLeaveDtrRow($timeIn, $lunchOut, $lunchIn, $timeOut, $remarks)) {
             return true;
         }
-        if ($remarks !== null && strpos($remarks, 'TARF_HOURS_CREDIT:') !== false) {
-            return true;
+        // TARF/NTARF rows are treated as complete (credited from TARF_HOURS_CREDIT or official base)
+        if ($remarks !== null) {
+            $r = (string) $remarks;
+            if (strpos($r, 'TARF:') === 0 || strpos($r, 'TARF_HOURS_CREDIT:') !== false || strtoupper(trim($r)) === 'TARF') {
+                return true;
+            }
+        }
+        foreach ([$timeIn, $lunchOut, $lunchIn, $timeOut] as $tcell) {
+            if (strtoupper(trim((string) $tcell)) === 'TARF') {
+                return true;
+            }
         }
         if ($remarks !== null && strpos($remarks, 'Holiday (Half-day PM):') === 0) {
             return isTimeLogged($lunchIn) && isTimeLogged($timeOut);
@@ -602,17 +634,6 @@ try {
      */
     function calculateLogData($log, $official, $fromDb, $officialHasLunch) {
         $r = $log['remarks'] ?? '';
-        if (strpos($r, 'TARF_HOURS_CREDIT:') !== false && preg_match('/TARF_HOURS_CREDIT:([\d.]+)/', $r, $tm)) {
-            return [
-                'absent_hours' => 0,
-                'absent_period' => '',
-                'late_minutes' => 0,
-                'undertime_minutes' => 0,
-                'tardiness_undertime_hours' => 0,
-                'status' => 'TARF',
-                'has_official_time' => false,
-            ];
-        }
         $isHoliday = !empty($log['holiday_id']) || !empty($log['holiday_title'])
             || (strpos($r, 'Holiday:') === 0 || strpos($r, 'Holiday (Half-day):') === 0
                 || strpos($r, 'Holiday (Half-day AM):') === 0 || strpos($r, 'Holiday (Half-day PM):') === 0);
@@ -627,6 +648,20 @@ try {
             $log['time_out'] ?? null,
             $log['remarks'] ?? null
         );
+        $isTarf = isTarfDtrRowAll($log);
+
+        // Approved TARF/NTARF: credit hours from TARF_HOURS_CREDIT (else official base)
+        if ($isTarf) {
+            return [
+                'absent_hours' => 0,
+                'absent_period' => '',
+                'late_minutes' => 0,
+                'undertime_minutes' => 0,
+                'tardiness_undertime_hours' => 0,
+                'status' => 'TARF',
+                'has_official_time' => true,
+            ];
+        }
 
         // Approved leave: credit base hours from official schedule (same as JS)
         if ($isLeave) {
@@ -1146,10 +1181,7 @@ try {
                 $log['time_out'] ?? null,
                 $log['remarks'] ?? null
             );
-            $tarfCredHours = null;
-            if (preg_match('/TARF_HOURS_CREDIT:([\d.]+)/', (string) ($log['remarks'] ?? ''), $tx)) {
-                $tarfCredHours = (float) $tx[1];
-            }
+            $isTarfRowTotals = isTarfDtrRowAll($log);
 
             $isComplete = isEntryComplete(
                 $log['time_in'],
@@ -1169,10 +1201,10 @@ try {
             $totalAbsentHoursForDays += $logData['absent_hours'];
 
             // Row hours (same rules as calculateLogHours / display row)
-            if ($isLeaveRow) {
+            if ($isTarfRowTotals) {
+                $hours = tarfRowCreditHoursAll($log, $official, $hasLunch);
+            } elseif ($isLeaveRow) {
                 $hours = getOfficialBaseHours($official, $hasLunch);
-            } elseif ($tarfCredHours !== null) {
-                $hours = $tarfCredHours;
             } elseif ($isHolidayRow && !$hasHolidayAttendance) {
                 $hours = $fromDb
                     ? (dtr_holiday_is_half_day_all($log) ? dtr_half_day_holiday_total_hours_display_all($log, $official, $hasLunch) : getOfficialBaseHours($official, $hasLunch))
@@ -1189,7 +1221,7 @@ try {
                     $otMin = $oo - $oi;
                 }
             }
-            if ($hours !== null && $tarfCredHours === null && $logData['has_official_time'] && $otMin === 0) {
+            if ($hours !== null && $logData['has_official_time'] && $otMin === 0) {
                 $officialBase = getOfficialBaseHours($official, $hasLunch);
                 if ($officialBase !== null && $hours > $officialBase) {
                     $hours = $officialBase;
@@ -1290,10 +1322,7 @@ try {
                                 $log['time_out'] ?? null,
                                 $log['remarks'] ?? null
                             );
-                            $tarfCredHours = null;
-                            if (preg_match('/TARF_HOURS_CREDIT:([\d.]+)/', (string) ($log['remarks'] ?? ''), $tx2)) {
-                                $tarfCredHours = (float) $tx2[1];
-                            }
+                            $isTarfRow = isTarfDtrRowAll($log);
                             $isComplete = isEntryComplete(
                                 $log['time_in'],
                                 $log['lunch_out'],
@@ -1305,10 +1334,10 @@ try {
                                 $hasLunch
                             );
 
-                            if ($isLeaveRow) {
+                            if ($isTarfRow) {
+                                $hours = tarfRowCreditHoursAll($log, $official, $hasLunch);
+                            } elseif ($isLeaveRow) {
                                 $hours = getOfficialBaseHours($official, $hasLunch);
-                            } elseif ($tarfCredHours !== null) {
-                                $hours = $tarfCredHours;
                             } elseif ($isHolidayRow && !$hasHolidayAttendance) {
                                 $hours = $fromDb
                                     ? (dtr_holiday_is_half_day_all($log) ? dtr_half_day_holiday_total_hours_display_all($log, $official, $hasLunch) : getOfficialBaseHours($official, $hasLunch))
@@ -1326,7 +1355,7 @@ try {
                                 }
                             }
                             $logData = calculateLogData($log, $official, $fromDb, $hasLunch);
-                            if ($hours !== null && $tarfCredHours === null && $logData['has_official_time'] && $otMinRow === 0) {
+                            if ($hours !== null && $logData['has_official_time'] && $otMinRow === 0) {
                                 $officialBase = getOfficialBaseHours($official, $hasLunch);
                                 if ($officialBase !== null && $hours > $officialBase) {
                                     $hours = $officialBase;
@@ -1357,8 +1386,6 @@ try {
                             $statusBadge = '';
                             if ($logData['status'] === 'LEAVE') {
                                 $statusBadge = '<span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">LEAVE</span>';
-                            } else if ($logData['status'] === 'TARF' || dtr_row_is_tarf_mirror_log($log)) {
-                                $statusBadge = '<span style="background-color: #0dcaf0; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 10px;">TRAVEL</span>';
                             } else if ($logData['status'] === 'Holiday') {
                                 $statusBadge = '<span style="background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Holiday</span>';
                             } else if ($logData['status'] === 'Complete') {
@@ -1375,6 +1402,8 @@ try {
                                 $statusBadge = '<span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Absent</span>';
                             } else if ($logData['status'] === 'Incomplete') {
                                 $statusBadge = '<span style="background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Incomplete</span>';
+                            } else if ($logData['status'] === 'TARF') {
+                                $statusBadge = '<span style="background-color: #0dcaf0; color: #033a4a; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold;">TARF</span>';
                             } else {
                                 $statusBadge = '<span style="background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">No official time yet</span>';
                             }
@@ -1387,7 +1416,9 @@ try {
                             $hdRow = $isHoliday && !$hasHolidayAttendance && dtr_holiday_is_half_day_all($log);
                             $hpRow = dtr_holiday_half_period_all($log);
                             $rowStyle = '';
-                            if ($hasHolidayAttendance) {
+                            if ($isTarfRow) {
+                                $rowStyle = 'background-color: #e7f5ff;';
+                            } elseif ($hasHolidayAttendance) {
                                 $rowStyle = 'background-color: #f8d7da;';
                             } elseif ($isHoliday) {
                                 $rowStyle = dtr_holiday_is_half_day_all($log) ? 'background-color: #fff3e0;' : 'background-color: #ffdddd;';
@@ -1400,10 +1431,10 @@ try {
                                 <td><?php echo date('M d, Y', strtotime($log['log_date'])); ?></td>
                                 <td><?php echo date('D', strtotime($log['log_date'])); ?></td>
                                 <td><?php
-                                    if ($isLeaveRow) {
+                                    if ($isTarfRow) {
+                                        echo 'TARF';
+                                    } elseif ($isLeaveRow) {
                                         echo 'LEAVE';
-                                    } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                        echo 'TRAVEL';
                                     } elseif ($isHoliday && !$hasHolidayAttendance) {
                                         if ($hdRow && $hpRow === 'morning') {
                                             echo htmlspecialchars('HOLIDAY');
@@ -1419,10 +1450,10 @@ try {
                                     }
                                 ?></td>
                                 <td><?php
-                                    if ($isLeaveRow) {
+                                    if ($isTarfRow) {
+                                        echo 'TARF';
+                                    } elseif ($isLeaveRow) {
                                         echo 'LEAVE';
-                                    } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                        echo 'TRAVEL';
                                     } elseif ($isHoliday && !$hasHolidayAttendance) {
                                         if ($hdRow && $hpRow === 'morning') {
                                             echo htmlspecialchars('HOLIDAY');
@@ -1438,10 +1469,10 @@ try {
                                     }
                                 ?></td>
                                 <td><?php
-                                    if ($isLeaveRow) {
+                                    if ($isTarfRow) {
+                                        echo 'TARF';
+                                    } elseif ($isLeaveRow) {
                                         echo 'LEAVE';
-                                    } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                        echo 'TRAVEL';
                                     } elseif ($isHoliday && !$hasHolidayAttendance) {
                                         if ($hdRow && $hpRow === 'afternoon') {
                                             echo htmlspecialchars('HOLIDAY');
@@ -1457,10 +1488,10 @@ try {
                                     }
                                 ?></td>
                                 <td><?php
-                                    if ($isLeaveRow) {
+                                    if ($isTarfRow) {
+                                        echo 'TARF';
+                                    } elseif ($isLeaveRow) {
                                         echo 'LEAVE';
-                                    } elseif ($tarfCredHours !== null || dtr_row_is_tarf_mirror_log($log)) {
-                                        echo 'TRAVEL';
                                     } elseif ($isHoliday && !$hasHolidayAttendance) {
                                         if ($hdRow && $hpRow === 'afternoon') {
                                             echo htmlspecialchars('HOLIDAY');

@@ -2,6 +2,7 @@
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/database.php';
+require_once '../includes/tarf_request_attendance_sync.php';
 
 requireAdmin();
 
@@ -54,6 +55,7 @@ if ($canApproveReject && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['
             } else {
                 $pardonType = $request['pardon_type'] ?? 'ordinary_pardon';
                 $isLeaveType = !in_array($pardonType, ['ordinary_pardon', 'tarf_ntarf', 'work_from_home']);
+                $isTarfNtarfType = ($pardonType === 'tarf_ntarf');
                 $anchorDate = date('Y-m-d', strtotime($request['log_date']));
                 $datesToApply = [$anchorDate];
                 if (!empty($request['pardon_covered_dates'])) {
@@ -71,6 +73,10 @@ if ($canApproveReject && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['
                 }
                 try {
                     $db->beginTransaction();
+                    if ($isTarfNtarfType) {
+                        tarf_request_ensure_tarf_tables($db);
+                        tarf_calendar_kind_ensure_column($db);
+                    }
                     foreach ($datesToApply as $dStr) {
                         $stmtLid = $db->prepare("SELECT id FROM attendance_logs WHERE employee_id = ? AND DATE(log_date) = ? LIMIT 1");
                         $stmtLid->execute([$request['employee_id'], $dStr]);
@@ -98,6 +104,58 @@ if ($canApproveReject && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['
                         if ($isLeaveType) {
                             $updateStmt = $db->prepare("UPDATE attendance_logs SET time_in = NULL, lunch_out = NULL, lunch_in = NULL, time_out = NULL, remarks = 'LEAVE' WHERE id = ?");
                             $updateStmt->execute([$applyLogId]);
+                        } elseif ($isTarfNtarfType) {
+                            // Mirror approved TARF/NTARF pardon to calendar tarf + tarf_employees and mark
+                            // attendance_logs row as TARF so DTR / view_logs / Employee Management indicate TARF.
+                            $tarfTitle = trim((string) ($request['reason'] ?? ''));
+                            if ($tarfTitle === '') {
+                                $tarfTitle = 'TARF/NTARF Pardon #' . $request_id;
+                            }
+                            $titleShort = function_exists('mb_substr')
+                                ? mb_substr($tarfTitle, 0, 220)
+                                : substr($tarfTitle, 0, 220);
+
+                            $calendarTarfId = 0;
+                            try {
+                                $insTarf = $db->prepare('INSERT INTO tarf (title, description, date, calendar_kind, created_at) VALUES (?, ?, ?, ?, NOW())');
+                                $insTarf->execute([
+                                    $titleShort,
+                                    'pardon_request_id:' . $request_id,
+                                    $dStr,
+                                    'travel',
+                                ]);
+                                $calendarTarfId = (int) $db->lastInsertId();
+                            } catch (Exception $eIns) {
+                                try {
+                                    $insSimple = $db->prepare('INSERT INTO tarf (title, description, date, created_at) VALUES (?, ?, ?, NOW())');
+                                    $insSimple->execute([$titleShort, 'pardon_request_id:' . $request_id, $dStr]);
+                                    $calendarTarfId = (int) $db->lastInsertId();
+                                    try {
+                                        $db->prepare('UPDATE tarf SET calendar_kind = ? WHERE id = ?')->execute(['travel', $calendarTarfId]);
+                                    } catch (Exception $e) { /* ignore */ }
+                                } catch (Exception $eIns2) {
+                                    error_log('pardon_requests TARF/NTARF tarf insert: ' . $eIns2->getMessage());
+                                    $calendarTarfId = 0;
+                                }
+                            }
+                            if ($calendarTarfId > 0) {
+                                try {
+                                    $insTe = $db->prepare('INSERT INTO tarf_employees (tarf_id, employee_id) VALUES (?, ?)');
+                                    $insTe->execute([$calendarTarfId, $request['employee_id']]);
+                                } catch (Exception $eTe) {
+                                    error_log('pardon_requests TARF/NTARF tarf_employees insert: ' . $eTe->getMessage());
+                                }
+                            }
+
+                            $ot = tarf_request_official_times_for_date($request['employee_id'], $dStr, $db);
+                            $creditH = tarf_request_credit_hours_from_official_slice($ot);
+                            $remarksUse = 'TARF: ' . $titleShort . ' | TARF_HOURS_CREDIT:' . $creditH;
+                            if (strlen($remarksUse) > 500) {
+                                $remarksUse = substr($remarksUse, 0, 497) . '...';
+                            }
+
+                            $updateStmt = $db->prepare('UPDATE attendance_logs SET time_in = NULL, lunch_out = NULL, lunch_in = NULL, time_out = NULL, remarks = ?, tarf_id = ? WHERE id = ?');
+                            $updateStmt->execute([$remarksUse, ($calendarTarfId > 0 ? $calendarTarfId : null), $applyLogId]);
                         } else {
                             $updateStmt = $db->prepare("UPDATE attendance_logs SET time_in = ?, lunch_out = ?, lunch_in = ?, time_out = ? WHERE id = ?");
                             $updateStmt->execute([

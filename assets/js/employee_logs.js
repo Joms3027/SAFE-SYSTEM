@@ -43,14 +43,7 @@ window.employeeLogsLoaded = false;
         const params = new URLSearchParams(formData);
         params.set('ajax', '1');
         const url = 'employee_logs.php?' + params.toString();
-        fetch(url, {
-            credentials: 'same-origin',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            cache: 'no-store'
-        })
+        fetch(url)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
@@ -92,14 +85,7 @@ window.employeeLogsLoaded = false;
                         const params = new URLSearchParams(formData);
                         const url = 'employee_logs.php?' + params.toString();
                         showSearchLoading();
-                        fetch(url, {
-                            credentials: 'same-origin',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            cache: 'no-store'
-                        })
+                        fetch(url)
                             .then(function(r) { return r.json(); })
                             .then(function(data) {
                                 if (data.success) {
@@ -633,6 +619,63 @@ async function calculateLogHours(log, officialTimesData = null) {
         };
     }
     
+    // Approved TARF/NTARF (calendar TARF or pardon-type tarf_ntarf): API shows TARF in time cells.
+    // Credit hours from TARF_HOURS_CREDIT remark (or fallback to official schedule), no tardiness/undertime.
+    const remarksRaw = (log.remarks && String(log.remarks)) || '';
+    const isTarfRow = !!log.is_tarf
+        || (Number(log.tarf_id) > 0 && remarksRaw.indexOf('TARF:') === 0)
+        || remarksRaw.indexOf('TARF_HOURS_CREDIT:') !== -1
+        || remarksRaw.trim().toUpperCase() === 'TARF'
+        || ['time_in', 'lunch_out', 'lunch_in', 'time_out'].some(function (k) {
+            const v = log[k];
+            return v && String(v).trim().toUpperCase() === 'TARF';
+        });
+    if (isTarfRow) {
+        let tarfHours = 0;
+        const m = remarksRaw.match(/TARF_HOURS_CREDIT:([\d.]+)/);
+        if (m) {
+            const parsed = parseFloat(m[1]);
+            if (!isNaN(parsed) && parsed > 0) {
+                tarfHours = parsed;
+            }
+        }
+        if (tarfHours <= 0 && officialTimesData && officialTimesData.times) {
+            const official = officialTimesData.times;
+            const officialInMin = parseTime(official.time_in);
+            const officialOutMin = parseTime(official.time_out);
+            if (officialInMin !== null && officialOutMin !== null) {
+                const officialHasLunchT = !!(official.lunch_out && official.lunch_in);
+                if (officialHasLunchT) {
+                    const lo = parseTime(official.lunch_out);
+                    const li = parseTime(official.lunch_in);
+                    if (lo !== null && li !== null) {
+                        tarfHours = (lo - officialInMin) / 60 + (officialOutMin - li) / 60;
+                    } else {
+                        tarfHours = (officialOutMin - officialInMin) / 60;
+                    }
+                } else {
+                    tarfHours = (officialOutMin - officialInMin) / 60;
+                }
+            }
+        }
+        if (tarfHours <= 0) {
+            tarfHours = 8;
+        }
+        return {
+            hours: tarfHours,
+            lateMinutes: 0,
+            undertimeMinutes: 0,
+            overtimeMinutes: 0,
+            otIn: null,
+            otOut: null,
+            statusBadge: '<span class="badge bg-info text-dark">TARF</span>',
+            hasOfficialTime: !!(officialTimesData && officialTimesData.times),
+            absentHours: 0,
+            absentPeriod: '',
+            tardinessUndertimeHours: 0
+        };
+    }
+
     // Approved leave pardon: API shows LEAVE in time cells; credit rendered hours from official schedule (no tardiness/undertime)
     const remarksUpper = (log.remarks && String(log.remarks).trim().toUpperCase()) || '';
     const isLeaveRow = remarksUpper === 'LEAVE' || ['time_in', 'lunch_out', 'lunch_in', 'time_out'].some(function (k) {
@@ -694,27 +737,6 @@ async function calculateLogHours(log, officialTimesData = null) {
             otIn: null,
             otOut: null,
             statusBadge: '<span class="badge bg-danger">LEAVE</span>',
-            hasOfficialTime: false,
-            absentHours: 0,
-            absentPeriod: '',
-            tardinessUndertimeHours: 0
-        };
-    }
-    
-    // Approved TARF: no official schedule for that day — credit hours only (no clock cells); not absent
-    const remarksForTarfCredit = (log.remarks && String(log.remarks).trim()) || '';
-    const tarfCreditMatch = remarksForTarfCredit.match(/TARF_HOURS_CREDIT:([\d.]+)/);
-    if (tarfCreditMatch && (log.tarf_id || remarksForTarfCredit.indexOf('TARF:') === 0)) {
-        const creditH = parseFloat(tarfCreditMatch[1], 10);
-        const h = !isNaN(creditH) && creditH > 0 ? creditH : 8;
-        return {
-            hours: h,
-            lateMinutes: 0,
-            undertimeMinutes: 0,
-            overtimeMinutes: 0,
-            otIn: null,
-            otOut: null,
-            statusBadge: '<span class="badge bg-info text-dark">TRAVEL</span>',
             hasOfficialTime: false,
             absentHours: 0,
             absentPeriod: '',
@@ -1231,6 +1253,8 @@ async function loadLogsWithFilters(empId) {
                         } else {
                             row.classList.add('dtr-row-holiday');
                         }
+                    } else if (log.is_tarf) {
+                        row.classList.add('dtr-row-tarf');
                     }
                     const logDate = log.log_date ? new Date(log.log_date + 'T00:00:00').toLocaleDateString('en-US', { 
                         year: 'numeric', 
@@ -1330,34 +1354,25 @@ async function loadLogsWithFilters(empId) {
                             halfDayLabel = 'Half-day PM';
                         }
                     }
-                    const dayCellText = (log.is_holiday && !log.has_holiday_attendance)
-                        ? (isHalfDayHolidayRow
+                    let dayCellText;
+                    if (log.is_holiday && !log.has_holiday_attendance) {
+                        dayCellText = isHalfDayHolidayRow
                             ? `${logDate} <span class="badge bg-warning text-dark ms-1">${halfDayLabel}</span>`
-                            : `${logDate} <span class="badge bg-danger ms-1">Holiday</span>`)
-                        : logDate;
-                    const remarksTrim = String(log.remarks || '').trim();
-                    const showTarfInTimeCells = (remarksTrim.indexOf('TARF_HOURS_CREDIT:') !== -1
-                            && (log.tarf_id || remarksTrim.indexOf('TARF:') === 0))
-                        || (Number(log.tarf_id) > 0 && remarksTrim.indexOf('TARF:') === 0);
-                    const tarfStatusBadge = '<span class="badge bg-info text-dark">TRAVEL</span>';
-                    const statusBadgeForDtr = showTarfInTimeCells
-                        ? tarfStatusBadge
-                        : ((log.is_holiday && !log.has_holiday_attendance)
-                            ? calc.statusBadge
-                            : (calc.absentPeriod === 'full'
-                                ? calc.statusBadge
-                                : (calc.hasOfficialTime ? calc.statusBadge : '<span class="badge bg-secondary">No official time yet</span>')));
-                    // Holiday/LEAVE: show literal label in time cells instead of parsing as time
+                            : `${logDate} <span class="badge bg-danger ms-1">Holiday</span>`;
+                    } else if (log.is_tarf) {
+                        dayCellText = `${logDate} <span class="badge bg-info text-dark ms-1">TARF</span>`;
+                    } else {
+                        dayCellText = logDate;
+                    }
+                    // Holiday/LEAVE/TARF: show literal label in time cells instead of parsing as time
                     const timeCell = (val) => {
-                        if (showTarfInTimeCells) {
-                            return '<span class="badge bg-info text-dark">TRAVEL</span>';
-                        }
                         if (val === 'HOLIDAY') {
                             return isHalfDayHolidayRow
                                 ? '<span class="badge bg-warning text-dark">Holiday</span>'
                                 : '<span class="badge bg-danger">Holiday</span>';
                         }
                         if (val === 'LEAVE') return `<span class="badge bg-danger">${val}</span>`;
+                        if (val === 'TARF') return '<span class="badge bg-info text-dark">TARF</span>';
                         return val ? formatTimeTo12h(val) : '<span class="text-muted">-</span>';
                     };
                     row.innerHTML = `
@@ -1398,7 +1413,7 @@ async function loadLogsWithFilters(empId) {
                             ${calc.hasOfficialTime ? totalOtFormat : '<span class="text-muted">-</span>'}
                         </td>
                         <td>
-                            ${statusBadgeForDtr}
+                            ${(log.is_holiday && !log.has_holiday_attendance) ? calc.statusBadge : (calc.absentPeriod === 'full' ? calc.statusBadge : (calc.hasOfficialTime ? calc.statusBadge : '<span class="badge bg-secondary">No official time yet</span>'))}
                         </td>
                         <td>
                             ${log.dean_verified ? '<span class="badge bg-success" title="Verified by supervisor"><i class="fas fa-check-circle me-1"></i>Yes</span>' : '<span class="badge bg-secondary">—</span>'}

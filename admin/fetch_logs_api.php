@@ -461,8 +461,14 @@ try {
             $hasHolidayAttendance = staff_dtr_row_has_real_holiday_attendance($row, $isHoliday);
             $isHalfDayHoliday = $isHoliday && !$hasHolidayAttendance && !empty($row['holiday_is_half_day']);
             $halfDayPeriod = ($row['holiday_half_day_period'] ?? 'morning') === 'afternoon' ? 'afternoon' : 'morning';
+            $rowRemarksStr = (string) ($row['remarks'] ?? '');
+            $isTarfRow = ((!empty($row['tarf_id']) && strpos($rowRemarksStr, 'TARF:') === 0)
+                || strpos($rowRemarksStr, 'TARF_HOURS_CREDIT:') !== false
+                || strtoupper(trim($rowRemarksStr)) === 'TARF');
             if ($isLeave) {
                 $timeInVal = $timeLOVal = $timeLIVal = $timeOutVal = 'LEAVE';
+            } elseif ($isTarfRow) {
+                $timeInVal = $timeLOVal = $timeLIVal = $timeOutVal = 'TARF';
             } elseif ($isHalfDayHoliday) {
                 if ($halfDayPeriod === 'afternoon') {
                     $timeInVal = $fmtTime($row['time_in'] ?? null);
@@ -501,7 +507,7 @@ try {
                 'holiday_title' => $row['holiday_title'] ?? null,
                 'holiday_is_half_day' => !empty($row['holiday_is_half_day']) ? 1 : 0,
                 'holiday_half_day_period' => $row['holiday_half_day_period'] ?? null,
-                'is_tarf' => (!empty($row['remarks']) && (strpos($row['remarks'], 'TARF:') === 0 || strtoupper($row['remarks']) === 'TARF')),
+                'is_tarf' => $isTarfRow,
                 'is_holiday' => (!empty($row['holiday_id']) || !empty($row['holiday_title']) || (!empty($row['remarks']) && strpos($row['remarks'], 'Holiday:') === 0)),
                 'has_holiday_attendance' => $hasHolidayAttendance,
                 'created_at' => $row['created_at'] ? date('Y-m-d H:i', strtotime($row['created_at'])) : null,

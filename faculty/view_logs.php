@@ -1629,14 +1629,6 @@ include_navigation();
         let dtrCanSubmitDates = [];
         let rowsPerPage = 10;
 
-        /** PHP may send submitted as []; [] is truthy so `|| {}` fails — always use a plain object map. */
-        function normalizeDtrSubmittedMap(raw) {
-            if (raw != null && typeof raw === 'object' && !Array.isArray(raw)) {
-                return raw;
-            }
-            return {};
-        }
-
         const PARDON_TYPES_CALENDAR = ['tarf_ntarf', 'work_from_home', 'vacation_leave', 'sick_leave', 'special_privilege_leave', 'forced_mandatory_leave', 'special_emergency_leave', 'maternity_leave', 'solo_parent_leave', 'magna_carta_leave', 'rehabilitation_leave', 'wellness_leave'];
         
         // Helper function to get weekday name from date
@@ -1733,15 +1725,14 @@ include_navigation();
             const dateFrom = year + '-' + String(month).padStart(2, '0') + '-01';
             const lastDay = new Date(year, month, 0).getDate();
             const dateTo = year + '-' + String(month).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
-            fetch('submit_dtr_api.php?date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo), { credentials: 'same-origin', cache: 'no-store' })
+            fetch('submit_dtr_api.php?date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo), { credentials: 'same-origin' })
                 .then(r => r.json())
                 .then(data => {
                     if (!data.success) {
                         el.innerHTML = '<span class="text-muted small">' + (data.message || 'Unable to load DTR status.') + '</span>';
                         return;
                     }
-                    const submitted = normalizeDtrSubmittedMap(data.submitted);
-                    dtrSubmittedDates = Object.assign({}, dtrSubmittedDates, submitted);
+                    const submitted = data.submitted || {};
                     const canSubmit = data.canSubmit || [];
                     let html = '<span class="text-muted small d-block mb-1">' + (data.policy || 'Submit each day\'s DTR the next day or after.') + '</span>';
                     if (canSubmit.length > 0) {
@@ -1780,7 +1771,7 @@ include_navigation();
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Submitting...';
             }
-            fetch('submit_dtr_api.php', { method: 'POST', body: form, credentials: 'same-origin', cache: 'no-store' })
+            fetch('submit_dtr_api.php', { method: 'POST', body: form, credentials: 'same-origin' })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
@@ -1885,11 +1876,11 @@ include_navigation();
                         if (dates.length > 0) {
                             const dateFrom = dates.reduce((a, b) => a < b ? a : b);
                             const dateTo = dates.reduce((a, b) => a > b ? a : b);
-                            fetch('submit_dtr_api.php?date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo), { credentials: 'same-origin', cache: 'no-store' })
+                            fetch('submit_dtr_api.php?date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo), { credentials: 'same-origin' })
                                 .then(r => r.json())
                                 .then(dtrData => {
                                     if (dtrData.success) {
-                                        dtrSubmittedDates = normalizeDtrSubmittedMap(dtrData.submitted);
+                                        dtrSubmittedDates = dtrData.submitted || {};
                                         dtrCanSubmitDates = dtrData.canSubmit || [];
                                     }
                                     renderLogsPage();
@@ -2020,7 +2011,7 @@ include_navigation();
                     const isTimeLogged = (time) => {
                         if (!time) return false;
                         const trimmed = String(time).trim();
-                        if (trimmed === 'HOLIDAY' || trimmed === 'LEAVE') return false;
+                        if (trimmed === 'HOLIDAY' || trimmed === 'LEAVE' || trimmed === 'TARF') return false;
                         // Treat 00:00, 00:00:00, or any variation as "not logged"
                         return trimmed !== '00:00' && trimmed !== '00:00:00' && trimmed !== '0:00' && trimmed !== '0:00:00';
                     };
@@ -2174,7 +2165,7 @@ include_navigation();
                         absentHours = 0;
                         absentPeriod = '';
                         overtimeHours = 0;
-                        statusBadge = '<span class="badge bg-info text-dark">TRAVEL</span>';
+                        statusBadge = '<span class="badge bg-info text-dark">TARF</span>';
                         hasOfficialTime = false;
                         tarfRowHandled = true;
                     }
@@ -2493,8 +2484,8 @@ include_navigation();
                             && (log.tarf_id || remarksStr.indexOf('TARF:') === 0))
                         || (Number(log.tarf_id) > 0 && remarksStr.indexOf('TARF:') === 0);
                     const timeCellDisplay = (val) => {
-                        if (showTarfInTimeCells) {
-                            return '<span class="badge bg-info text-dark">TRAVEL</span>';
+                        if (showTarfInTimeCells || val === 'TARF') {
+                            return '<span class="badge bg-info text-dark">TARF</span>';
                         }
                         if (val === 'HOLIDAY') {
                             return isHalfDayHoliday
@@ -2505,7 +2496,7 @@ include_navigation();
                         return val || '<span class="text-muted">-</span>';
                     };
                     if (showTarfInTimeCells) {
-                        statusBadge = '<span class="badge bg-info text-dark">TRAVEL</span>';
+                        statusBadge = '<span class="badge bg-info text-dark">TARF</span>';
                     }
                     if (log.is_holiday && !log.has_holiday_attendance && !isHalfDayHoliday && !showTarfInTimeCells) {
                         statusBadge = '<span class="badge bg-secondary">Holiday</span>';
@@ -2699,8 +2690,9 @@ include_navigation();
             const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
             document.getElementById('filterDateFrom').value = firstDay.toISOString().slice(0, 10);
             document.getElementById('filterDateTo').value = lastDay.toISOString().slice(0, 10);
-            currentPage = 1;
             loadLogs();
+            currentPage = 1;
+            renderLogsPage();
         }
         
         let dtrAllLogs = [];

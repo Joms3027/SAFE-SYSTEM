@@ -3,7 +3,7 @@
  * Parallel TARF/NTARF endorsement: supervisor + applicable endorser + fund (Budget/Accounting)
  * share status pending_joint until all required parties endorse.
  *
- * Run once: php db/migrations/run_tarf_parallel_joint_endorsements.php
+ * Run once alone, or use: php db/migrations/run_tarf_ntarf_migrations.php (runs all TARF/NTARF steps).
  */
 require_once __DIR__ . '/../../includes/config.php';
 require_once __DIR__ . '/../../includes/database.php';
@@ -17,7 +17,7 @@ try {
 
     $tbl = $db->query("SHOW TABLES LIKE 'tarf_requests'");
     if (!$tbl || $tbl->rowCount() === 0) {
-        echo "Table tarf_requests missing.\n";
+        echo "Table tarf_requests missing. Run: php db/migrations/run_tarf_ntarf_migrations.php\n";
         exit(1);
     }
 

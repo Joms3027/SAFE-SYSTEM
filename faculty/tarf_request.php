@@ -438,7 +438,7 @@ include_navigation();
 
                 <?php if (!$tableExists): ?>
                     <div class="alert alert-warning">
-                        <strong>Not available.</strong> The administrator must run <code>db/migrations/run_tarf_requests_migration.php</code> once.
+                        <strong>Not available.</strong> The administrator must run <code>php db/migrations/run_tarf_ntarf_migrations.php</code> once (TARF and NTARF).
                     </div>
                 <?php else: ?>
                 <?php

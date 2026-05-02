@@ -514,6 +514,13 @@ if (!empty($_GET['ajax']) && $_GET['ajax'] === '1') {
         #logsTableBody tr.dtr-row-holiday-attendance:hover {
             background-color: #f5c6cb !important;
         }
+        /* TARF / NTARF rows in attendance log */
+        #logsTableBody tr.dtr-row-tarf {
+            background-color: #e7f5ff !important;
+        }
+        #logsTableBody tr.dtr-row-tarf:hover {
+            background-color: #d0ebff !important;
+        }
         
         #employeesTable tbody tr:last-child td {
             border-bottom: none;

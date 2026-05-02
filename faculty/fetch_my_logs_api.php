@@ -272,8 +272,14 @@ try {
             $hasHolidayAttendance = staff_dtr_row_has_real_holiday_attendance($row, $isHoliday);
             $isHalfDayHoliday = $isHoliday && !$hasHolidayAttendance && !empty($row['holiday_is_half_day']);
             $halfDayPeriod = ($row['holiday_half_day_period'] ?? 'morning') === 'afternoon' ? 'afternoon' : 'morning';
+            $rowRemarksStr = (string) ($row['remarks'] ?? '');
+            $isTarfRow = ((!empty($row['tarf_id']) && strpos($rowRemarksStr, 'TARF:') === 0)
+                || strpos($rowRemarksStr, 'TARF_HOURS_CREDIT:') !== false
+                || strtoupper(trim($rowRemarksStr)) === 'TARF');
             if ($isLeave) {
                 $timeInVal = $timeLOVal = $timeLIVal = $timeOutVal = 'LEAVE';
+            } elseif ($isTarfRow) {
+                $timeInVal = $timeLOVal = $timeLIVal = $timeOutVal = 'TARF';
             } elseif ($isHalfDayHoliday) {
                 if ($halfDayPeriod === 'afternoon') {
                     $timeInVal = $fmtTime($row['time_in'] ?? null);
@@ -312,26 +318,13 @@ try {
                 'holiday_title' => $row['holiday_title'] ?? null,
                 'holiday_is_half_day' => !empty($row['holiday_is_half_day']) ? 1 : 0,
                 'holiday_half_day_period' => $row['holiday_half_day_period'] ?? null,
-                'is_tarf' => (!empty($row['remarks']) && (strpos($row['remarks'], 'TARF:') === 0 || strtoupper($row['remarks']) === 'TARF')),
+                'is_tarf' => $isTarfRow,
                 'is_holiday' => (!empty($row['holiday_id']) || !empty($row['holiday_title']) || (!empty($row['remarks']) && strpos($row['remarks'], 'Holiday:') === 0)),
                 'has_holiday_attendance' => $hasHolidayAttendance,
                 'created_at' => $row['created_at'] ? date('Y-m-d H:i', strtotime($row['created_at'])) : null,
                 'pardon_status' => $row['pardon_status'],
                 'pardon_open' => $hasPardonOpenTable && !empty($row['pardon_open_flag'])
             ];
-        }
-
-        // Resolve date range for pardon_open and absent-day scanning (UI filter or span of loaded logs)
-        $absent_date_from = $date_from;
-        $absent_date_to = $date_to;
-        if (empty($absent_date_from) || empty($absent_date_to)) {
-            foreach ($logs as $log) {
-                $d = $log['log_date'] ?? null;
-                if ($d) {
-                    if (empty($absent_date_from) || $d < $absent_date_from) $absent_date_from = $d;
-                    if (empty($absent_date_to) || $d > $absent_date_to) $absent_date_to = $d;
-                }
-            }
         }
 
         // For absent days we need pardon_open by (employee_id, log_date); fetch set of opened dates if table exists
@@ -356,6 +349,17 @@ try {
         }
 
         // Add absent days: employee has official time for a day but did not come in (no log)
+        $absent_date_from = $date_from;
+        $absent_date_to = $date_to;
+        if (empty($absent_date_from) || empty($absent_date_to)) {
+            foreach ($logs as $log) {
+                $d = $log['log_date'] ?? null;
+                if ($d) {
+                    if (empty($absent_date_from) || $d < $absent_date_from) $absent_date_from = $d;
+                    if (empty($absent_date_to) || $d > $absent_date_to) $absent_date_to = $d;
+                }
+            }
+        }
         if ($absent_date_from && $absent_date_to) {
             // Ensure absent_cleared table exists (for tracking cleared absents)
             try {

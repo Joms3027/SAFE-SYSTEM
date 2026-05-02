@@ -144,8 +144,8 @@ require_once __DIR__ . '/../includes/admin_layout_helper.php';
 
                 <?php if (!$tableExists): ?>
                 <div class="alert alert-warning">
-                    <strong>Not available.</strong> The <code>tarf_requests</code> table is missing. Run
-                    <code>db/migrations/run_tarf_requests_migration.php</code> once, then reload this page.
+                    <strong>Not available.</strong> The <code>tarf_requests</code> table (TARF / NTARF) is missing or incomplete. Run
+                    <code>php db/migrations/run_tarf_ntarf_migrations.php</code> once, then reload this page.
                 </div>
                 <?php else: ?>
 

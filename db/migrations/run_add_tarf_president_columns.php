@@ -13,7 +13,7 @@ try {
 
     $tbl = $db->query("SHOW TABLES LIKE 'tarf_requests'");
     if (!$tbl || $tbl->rowCount() === 0) {
-        echo "Table tarf_requests does not exist.\n";
+        echo "Table tarf_requests does not exist. Run: php db/migrations/run_tarf_ntarf_migrations.php\n";
         exit(1);
     }
 

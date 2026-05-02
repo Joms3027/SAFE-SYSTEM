@@ -30,7 +30,7 @@ $db = $database->getConnection();
 
 $tbl = $db->query("SHOW TABLES LIKE 'tarf_requests'");
 if (!$tbl || $tbl->rowCount() === 0) {
-    echo json_encode(['success' => false, 'message' => 'NTARF is not available yet. Please ask the administrator to run the database migration.']);
+    echo json_encode(['success' => false, 'message' => 'NTARF is not available yet. Run: php db/migrations/run_tarf_ntarf_migrations.php']);
     exit;
 }
 
@@ -52,7 +52,7 @@ $wfCol = $db->query("SHOW COLUMNS FROM tarf_requests LIKE " . $db->quote('endors
 if (!$wfCol || $wfCol->rowCount() === 0) {
     echo json_encode([
         'success' => false,
-        'message' => 'Request routing is not installed. Run db/migrations/run_add_tarf_workflow_columns.php on the server.',
+        'message' => 'Request routing is not installed. Run: php db/migrations/run_tarf_ntarf_migrations.php',
     ]);
     exit;
 }
@@ -60,7 +60,7 @@ $fundCol = $db->query("SHOW COLUMNS FROM tarf_requests LIKE " . $db->quote('fund
 if (!$fundCol || $fundCol->rowCount() === 0) {
     echo json_encode([
         'success' => false,
-        'message' => 'Parallel endorsement columns are missing. Run db/migrations/run_tarf_parallel_joint_endorsements.php on the server.',
+        'message' => 'Parallel endorsement columns are missing. Run: php db/migrations/run_tarf_ntarf_migrations.php',
     ]);
     exit;
 }
