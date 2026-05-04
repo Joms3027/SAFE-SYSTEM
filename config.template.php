@@ -27,6 +27,8 @@ define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_NAME', getenv('DB_NAME') ?: 'wpu_faculty_system');
 define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
+// PDO persistent connections: leave false on shared MySQL (see includes/database.php).
+define('DB_PERSISTENT', filter_var(getenv('DB_PERSISTENT') ?: '0', FILTER_VALIDATE_BOOLEAN));
 
 // ============================================
 // SITE CONFIGURATION

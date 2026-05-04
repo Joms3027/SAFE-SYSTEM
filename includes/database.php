@@ -1,4 +1,10 @@
 <?php
+/**
+ * Database access uses one PDO per HTTP request (singleton). That is the usual PHP substitute for
+ * connection pooling: concurrency is bounded by concurrent requests, not idle workers. Heavy reuse
+ * across app servers belongs in infrastructure (e.g. ProxySQL). Connections are released on
+ * shutdown via releaseInstance(); non-persistent PDO closes the server session when the handle drops.
+ */
 class Database {
     private static $instance = null;
     private $host = DB_HOST;
@@ -18,11 +24,14 @@ class Database {
 
     /**
      * PDO options shared by the constructor and reconnect().
-     * ATTR_PERSISTENT enables PHP PDO persistent connections (driver-level pooling for typical SAPIs).
+     * Default (DB_PERSISTENT false): connections close with the request — avoids idle "Sleep" slots
+     * piling up per PHP worker on shared MySQL. Enable DB_PERSISTENT only with a dedicated DB and
+     * sufficient max_connections.
      */
     private static function getPdoOptions(): array {
+        $persistent = defined('DB_PERSISTENT') && DB_PERSISTENT;
         $options = [
-            PDO::ATTR_PERSISTENT => true,
+            PDO::ATTR_PERSISTENT => $persistent,
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
@@ -54,8 +63,34 @@ class Database {
         }
     }
 
+    /**
+     * Alias for releaseInstance() — call from CLI/cron after work completes if the shutdown hook is unreliable.
+     */
+    public static function disconnect(): void {
+        self::releaseInstance();
+    }
+
+    /**
+     * Run a callback with getInstance(), then always disconnect. Use for standalone CLI batches only —
+     * not inside normal web requests that expect the singleton to survive the whole script.
+     *
+     * @param callable(Database $db): mixed $callback
+     * @return mixed
+     */
+    public static function runScoped(callable $callback) {
+        try {
+            return $callback(self::getInstance());
+        } finally {
+            self::releaseInstance();
+        }
+    }
+
     private function releasePdo(): void {
         $this->conn = null;
+    }
+
+    public function __destruct() {
+        $this->releasePdo();
     }
 
     private function __construct() {
@@ -484,6 +519,20 @@ class Database {
         return implode(', ', array_map([$this, 'escapeIdentifier'], $parts));
     }
 
+    /**
+     * Run a one-off SQL string (SHOW …, etc.) and close the result cursor immediately.
+     *
+     * @return array|false
+     */
+    private function queryFetchAssoc(string $sql) {
+        $stmt = $this->conn->query($sql);
+        try {
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } finally {
+            $stmt->closeCursor();
+        }
+    }
+
     public function insert($table, $data) {
         // Escape table name to prevent SQL injection
         $table = $this->escapeIdentifier($table);
@@ -494,14 +543,18 @@ class Database {
         
         $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
         $stmt = $this->conn->prepare($sql);
-        $result = $stmt->execute($data);
-        
-        // Clear cache after insert
-        if ($result) {
-            self::clearCache();
+        try {
+            $result = $stmt->execute($data);
+
+            // Clear cache after insert
+            if ($result) {
+                self::clearCache();
+            }
+
+            return $result;
+        } finally {
+            $stmt->closeCursor();
         }
-        
-        return $result;
     }
 
     public function update($table, $data, $where, $whereParams = []) {
@@ -523,14 +576,18 @@ class Database {
         
         $sql = "UPDATE $table SET $set WHERE $where";
         $stmt = $this->conn->prepare($sql);
-        $result = $stmt->execute($allParams);
-        
-        // Clear cache after update
-        if ($result) {
-            self::clearCache();
+        try {
+            $result = $stmt->execute($allParams);
+
+            // Clear cache after update
+            if ($result) {
+                self::clearCache();
+            }
+
+            return $result;
+        } finally {
+            $stmt->closeCursor();
         }
-        
-        return $result;
     }
 
     public function select($table, $columns = '*', $where = null, $params = [], $useCache = true) {
@@ -571,24 +628,28 @@ class Database {
         }
         
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        $result = $stmt->fetchAll();
-        
-        // Cache result if enabled
-        if (self::$cacheEnabled && $useCache) {
-            $cacheKey = $this->getCacheKey($sql, $params);
-            
-            // Store in memory cache
-            self::$queryCache[$cacheKey] = [
-                'data' => $result,
-                'time' => time()
-            ];
-            
-            // Also store in file cache for persistence
-            $this->writeFileCache($cacheKey, $result);
+        try {
+            $stmt->execute($params);
+            $result = $stmt->fetchAll();
+
+            // Cache result if enabled
+            if (self::$cacheEnabled && $useCache) {
+                $cacheKey = $this->getCacheKey($sql, $params);
+
+                // Store in memory cache
+                self::$queryCache[$cacheKey] = [
+                    'data' => $result,
+                    'time' => time()
+                ];
+
+                // Also store in file cache for persistence
+                $this->writeFileCache($cacheKey, $result);
+            }
+
+            return $result;
+        } finally {
+            $stmt->closeCursor();
         }
-        
-        return $result;
     }
 
     public function selectOne($table, $columns = '*', $where = null, $params = [], $useCache = true) {
@@ -629,24 +690,28 @@ class Database {
         }
         
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        $result = $stmt->fetch();
-        
-        // Cache result if enabled
-        if (self::$cacheEnabled && $useCache) {
-            $cacheKey = $this->getCacheKey($sql, $params);
-            
-            // Store in memory cache
-            self::$queryCache[$cacheKey] = [
-                'data' => $result,
-                'time' => time()
-            ];
-            
-            // Also store in file cache for persistence
-            $this->writeFileCache($cacheKey, $result);
+        try {
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+
+            // Cache result if enabled
+            if (self::$cacheEnabled && $useCache) {
+                $cacheKey = $this->getCacheKey($sql, $params);
+
+                // Store in memory cache
+                self::$queryCache[$cacheKey] = [
+                    'data' => $result,
+                    'time' => time()
+                ];
+
+                // Also store in file cache for persistence
+                $this->writeFileCache($cacheKey, $result);
+            }
+
+            return $result;
+        } finally {
+            $stmt->closeCursor();
         }
-        
-        return $result;
     }
 
     /**
@@ -678,26 +743,30 @@ class Database {
         }
         
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        
-        // Only cache SELECT queries
-        if (stripos(trim($sql), 'SELECT') === 0) {
-            $result = $stmt->fetchAll();
-            
-            if (self::$cacheEnabled && $useCache) {
-                $cacheKey = $this->getCacheKey($sql, $params);
-                self::$queryCache[$cacheKey] = [
-                    'data' => $result,
-                    'time' => time()
-                ];
-                $this->writeFileCache($cacheKey, $result);
+        try {
+            $stmt->execute($params);
+
+            // Only cache SELECT queries
+            if (stripos(trim($sql), 'SELECT') === 0) {
+                $result = $stmt->fetchAll();
+
+                if (self::$cacheEnabled && $useCache) {
+                    $cacheKey = $this->getCacheKey($sql, $params);
+                    self::$queryCache[$cacheKey] = [
+                        'data' => $result,
+                        'time' => time()
+                    ];
+                    $this->writeFileCache($cacheKey, $result);
+                }
+
+                return $result;
             }
-            
-            return $result;
-        } else {
+
             // For INSERT/UPDATE/DELETE, clear cache
             self::clearCache();
             return $stmt->rowCount();
+        } finally {
+            $stmt->closeCursor();
         }
     }
 
@@ -728,13 +797,17 @@ class Database {
         
         $sql = "INSERT INTO $table ($columnsStr) VALUES " . implode(', ', $values);
         $stmt = $this->conn->prepare($sql);
-        $result = $stmt->execute($params);
-        
-        if ($result) {
-            self::clearCache();
+        try {
+            $result = $stmt->execute($params);
+
+            if ($result) {
+                self::clearCache();
+            }
+
+            return $result;
+        } finally {
+            $stmt->closeCursor();
         }
-        
-        return $result;
     }
 
     /**
@@ -866,13 +939,17 @@ class Database {
         }
         
         $stmt = $this->conn->prepare($sql);
-        $result = $stmt->execute($data);
-        
-        if ($result) {
-            self::clearCache();
+        try {
+            $result = $stmt->execute($data);
+
+            if ($result) {
+                self::clearCache();
+            }
+
+            return $result;
+        } finally {
+            $stmt->closeCursor();
         }
-        
-        return $result;
     }
 
     /**
@@ -896,8 +973,12 @@ class Database {
         $sql .= " FOR UPDATE";
         
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetch();
+        try {
+            $stmt->execute($params);
+            return $stmt->fetch();
+        } finally {
+            $stmt->closeCursor();
+        }
     }
 
     /**
@@ -916,7 +997,7 @@ class Database {
      * @param string $sql SQL query
      * @param array $params Parameters
      * @param int $maxRetries Maximum retry attempts
-     * @return PDOStatement|false Statement or false on failure
+     * @return PDOStatement Prepared statement (caller must consume results and call closeCursor() when done)
      */
     public function executeWithRetry($sql, $params = [], $maxRetries = 3) {
         $attempts = 0;
@@ -974,8 +1055,13 @@ class Database {
      */
     public function isConnected() {
         try {
-            $this->conn->query('SELECT 1');
-            return true;
+            $stmt = $this->conn->query('SELECT 1');
+            try {
+                $stmt->fetchColumn();
+                return true;
+            } finally {
+                $stmt->closeCursor();
+            }
         } catch (PDOException $e) {
             return false;
         }
@@ -1013,14 +1099,18 @@ class Database {
         
         $sql = "DELETE FROM $table WHERE $where";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute($params);
-        
-        $rowCount = $stmt->rowCount();
-        if ($rowCount > 0) {
-            self::clearCache();
+        try {
+            $stmt->execute($params);
+
+            $rowCount = $stmt->rowCount();
+            if ($rowCount > 0) {
+                self::clearCache();
+            }
+
+            return $rowCount;
+        } finally {
+            $stmt->closeCursor();
         }
-        
-        return $rowCount;
     }
 
     /**
@@ -1029,7 +1119,12 @@ class Database {
      * @return int Row count
      */
     public function rowCount() {
-        return $this->conn->query('SELECT ROW_COUNT()')->fetchColumn();
+        $stmt = $this->conn->query('SELECT ROW_COUNT()');
+        try {
+            return (int) $stmt->fetchColumn();
+        } finally {
+            $stmt->closeCursor();
+        }
     }
 
     /**
@@ -1041,24 +1136,22 @@ class Database {
     public function getServerStatus() {
         try {
             $status = [];
-            
-            // Get connection threads info
-            $result = $this->conn->query("SHOW STATUS LIKE 'Threads_connected'")->fetch();
+
+            $result = $this->queryFetchAssoc("SHOW STATUS LIKE 'Threads_connected'");
             $status['threads_connected'] = $result['Value'] ?? 0;
-            
-            $result = $this->conn->query("SHOW VARIABLES LIKE 'max_connections'")->fetch();
+
+            $result = $this->queryFetchAssoc("SHOW VARIABLES LIKE 'max_connections'");
             $status['max_connections'] = $result['Value'] ?? 100;
-            
+
             // Calculate connection usage percentage
             $status['connection_usage'] = round(($status['threads_connected'] / $status['max_connections']) * 100, 2);
-            
-            // Get slow queries count
-            $result = $this->conn->query("SHOW STATUS LIKE 'Slow_queries'")->fetch();
+
+            $result = $this->queryFetchAssoc("SHOW STATUS LIKE 'Slow_queries'");
             $status['slow_queries'] = $result['Value'] ?? 0;
-            
+
             // Warning if connection usage is high
             $status['status'] = $status['connection_usage'] > 80 ? 'high_load' : 'normal';
-            
+
             return $status;
         } catch (PDOException $e) {
             return [
@@ -1092,16 +1185,19 @@ class Database {
                 }
                 
                 $stmt = $this->conn->prepare($sql);
-                $stmt->execute($params);
-                
-                if (stripos(trim($sql), 'SELECT') === 0) {
-                    return $stmt->fetchAll();
-                } else {
+                try {
+                    $stmt->execute($params);
+
+                    if (stripos(trim($sql), 'SELECT') === 0) {
+                        return $stmt->fetchAll();
+                    }
                     return $stmt->rowCount();
+                } finally {
+                    $stmt->closeCursor();
                 }
             } catch (PDOException $e) {
                 $errorCode = $e->errorInfo[1] ?? 0;
-                
+
                 // Handle recoverable errors
                 // 1040 = Too many connections
                 // 1205 = Lock wait timeout
@@ -1143,12 +1239,12 @@ class Database {
      */
     public function isUnderHeavyLoad() {
         try {
-            $result = $this->conn->query("SHOW STATUS LIKE 'Threads_connected'")->fetch();
+            $result = $this->queryFetchAssoc("SHOW STATUS LIKE 'Threads_connected'");
             $threadsConnected = intval($result['Value'] ?? 0);
-            
-            $result = $this->conn->query("SHOW VARIABLES LIKE 'max_connections'")->fetch();
+
+            $result = $this->queryFetchAssoc("SHOW VARIABLES LIKE 'max_connections'");
             $maxConnections = intval($result['Value'] ?? 100);
-            
+
             // Consider heavy load if more than 70% connections used
             return ($threadsConnected / $maxConnections) > 0.70;
         } catch (Exception $e) {
