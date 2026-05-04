@@ -9,6 +9,7 @@ require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/database.php';
 require_once '../includes/staff_dtr_month_data.php';
+require_once '../includes/calendar_holiday_week_schedule.php';
 
 requireAdmin();
 
@@ -97,7 +98,7 @@ function print_emp_dtr_parse_time_minutes($timeStr) {
  * @param array|null $log
  * @return array{h: string, m: string}
  */
-function print_emp_dtr_undertime($log, $isSaturday, $officialRegular, $officialSaturday) {
+function print_emp_dtr_undertime($log, $isSaturday, $officialRegular, $officialSaturday, $db = null) {
     if (!$log) {
         return ['h' => '—', 'm' => '—'];
     }
@@ -113,6 +114,12 @@ function print_emp_dtr_undertime($log, $isSaturday, $officialRegular, $officialS
     $official = $isSaturday
         ? print_emp_dtr_parse_official_minutes($officialSaturday)
         : print_emp_dtr_parse_official_minutes($officialRegular);
+    if ($db instanceof PDO && $log && !empty($log['log_date'])) {
+        $ld = substr((string) $log['log_date'], 0, 10);
+        if ($ld !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ld) && calendar_should_apply_holiday_week_eight_hours($db, $ld)) {
+            $official = ['lunchOut' => 12 * 60, 'lunchIn' => 13 * 60, 'timeOut' => 17 * 60];
+        }
+    }
     $undertimeMinutes = 0;
     $hasLunchOut = $lunchOut && trim((string) $lunchOut) !== '' && $lunchOut !== '00:00' && $lunchOut !== '0:00';
     $hasLunchIn = $lunchIn && trim((string) $lunchIn) !== '' && $lunchIn !== '00:00' && $lunchIn !== '0:00';
@@ -170,7 +177,7 @@ foreach ($employees as $emp) {
         $ts = strtotime($dateKey);
         $isSaturday = $ts !== false && (int) date('w', $ts) === 6;
         $isTarfRow = $log && !empty($log['is_tarf']);
-        $ut = $isTarfRow ? ['h' => '—', 'm' => '—'] : print_emp_dtr_undertime($log, $isSaturday, $bundle['official_regular'], $bundle['official_saturday']);
+        $ut = $isTarfRow ? ['h' => '—', 'm' => '—'] : print_emp_dtr_undertime($log, $isSaturday, $bundle['official_regular'], $bundle['official_saturday'], $db);
         $mapHol = static function ($v) {
             return ($v === 'HOLIDAY') ? 'HOLIDAY' : (string) $v;
         };

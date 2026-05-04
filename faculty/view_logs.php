@@ -936,9 +936,12 @@ include_navigation();
         #dtrModal .dtr-certify { font-size: 0.8rem; margin-top: 0.75rem; margin-bottom: 0.25rem; line-height: 1.35; color: #000; }
         #dtrModal .dtr-verified { font-size: 0.8rem; margin-top: 1rem; margin-bottom: 0; color: #000; }
         #dtrModal .dtr-verified .dtr-incharge { display: block; font-weight: 700; margin-top: 0.25rem; }
-#dtrModal .dtr-verified .dtr-incharge:empty { font-weight: normal; border-bottom: 1px solid #000; min-width: 200px; }
+        #dtrModal .dtr-verified .dtr-incharge:empty { font-weight: normal; border-bottom: 1px solid #000; min-width: 200px; }
         #dtrModal .dtr-loading-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; border-radius: inherit; }
         #dtrModal .dtr-table-wrap { position: relative; }
+        #dtrModal #dtrHolidayWeekNotice { font-size: 0.8rem; border-left: 4px solid #0d6efd; }
+        #viewLogsHolidayWeekBanner { font-size: 0.875rem; line-height: 1.35; }
+        #viewLogsHolidayWeekBanner .fa-calendar-week { font-size: 1.1rem; }
         .dtr-scroll-hint { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
         @media (max-width: 767px) {
             #dtrModal .modal-dialog { max-width: 100%; margin: 0.5rem; width: calc(100% - 1rem); }
@@ -1520,6 +1523,16 @@ include_navigation();
                         </div>
                     </div>
                     <div class="card-body">
+                        <div id="viewLogsHolidayWeekBanner" class="alert alert-primary border-primary border-start border-4 py-3 px-3 mb-3 d-none shadow-sm" role="status">
+                            <div class="d-flex align-items-start gap-2 flex-wrap flex-md-nowrap">
+                                <span class="text-primary flex-shrink-0 mt-1"><i class="fas fa-calendar-week" aria-hidden="true"></i></span>
+                                <div>
+                                    <strong>Holiday week:</strong> this calendar week (Sun–Sat) includes a university holiday and has been switched to an <strong>8-hour reference day</strong> (08:00–12:00, 13:00–17:00).
+                                    Late, undertime, and related totals on this page use that schedule for affected dates—not only your stored official-times pattern.
+                                    <span id="viewLogsHolidayWeekBannerSub" class="d-block small mt-2 mb-0 opacity-90"></span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="table-responsive logs-table-container">
                             <table class="table table-sm table-hover">
                                 <thead class="table-light sticky-top">
@@ -1655,7 +1668,7 @@ include_navigation();
         // Get official times for an employee for a specific date (based on weekday)
         async function getOfficialTimesForDate(logDate) {
             if (!employeeId || !logDate) {
-                return { found: false, times: DEFAULT_OFFICIAL_TIMES };
+                return { found: false, holidayWeekEightHour: false, times: DEFAULT_OFFICIAL_TIMES };
             }
             
             const weekday = getWeekdayName(logDate);
@@ -1683,10 +1696,12 @@ include_navigation();
                 
                 if (data.success && data.official_time && data.official_time.found) {
                     const hasLunch = !!(data.official_time.lunch_out && data.official_time.lunch_in);
+                    const hw = !!(data.official_time && data.official_time.holiday_week_eight_hour);
                     const officialTimes = {
                         found: true,
                         weekday: weekday,
                         hasLunch: hasLunch,
+                        holidayWeekEightHour: hw,
                         times: {
                             time_in: data.official_time.time_in + ':00',
                             lunch_out: hasLunch ? (data.official_time.lunch_out + ':00') : null,
@@ -1699,10 +1714,12 @@ include_navigation();
                     employeeOfficialTimesCache[cacheKey] = officialTimes;
                     return officialTimes;
                 } else {
-                    // No official time found
+                    // No official time found (API may still report holiday_week_eight_hour on overlay path)
+                    const hw = !!(data.success && data.official_time && data.official_time.holiday_week_eight_hour);
                     const result = {
                         found: false,
                         weekday: weekday,
+                        holidayWeekEightHour: hw,
                         times: DEFAULT_OFFICIAL_TIMES
                     };
                     employeeOfficialTimesCache[cacheKey] = result;
@@ -1710,7 +1727,7 @@ include_navigation();
                 }
             } catch (error) {
                 console.error('Error fetching official times:', error);
-                return { found: false, times: DEFAULT_OFFICIAL_TIMES };
+                return { found: false, holidayWeekEightHour: false, times: DEFAULT_OFFICIAL_TIMES };
             }
         }
         
@@ -1830,6 +1847,24 @@ include_navigation();
             }
         });
         
+        function updateMainPageHolidayWeekBanner(data) {
+            const banner = document.getElementById('viewLogsHolidayWeekBanner');
+            const sub = document.getElementById('viewLogsHolidayWeekBannerSub');
+            if (!banner) return;
+            if (data && data.success && data.holiday_week_eight_hour_active) {
+                banner.classList.remove('d-none');
+                if (sub) {
+                    var display = (data.holiday_week_eight_hour_week_end_display || '').trim();
+                    sub.textContent = display
+                        ? ('This week\'s policy window ends Saturday, ' + display + '. After that week, totals use your saved official times again.')
+                        : 'This applies for the current calendar week only.';
+                }
+            } else {
+                banner.classList.add('d-none');
+                if (sub) sub.textContent = '';
+            }
+        }
+
         function loadLogs() {
             const tbody = document.getElementById('logsTableBody');
             if (!tbody) {
@@ -1837,6 +1872,7 @@ include_navigation();
                 return;
             }
             tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-4" style="display: block; padding-left: 0.5rem !important;">Loading...</td></tr>';
+            updateMainPageHolidayWeekBanner({ success: false });
             
             
             // Fetch logs from API (with date range from filter)
@@ -1864,6 +1900,7 @@ include_navigation();
                 })
                 .then(data => {
                     tbody.innerHTML = '';
+                    updateMainPageHolidayWeekBanner(data || {});
                     
                     if (data.success && data.logs && data.logs.length > 0) {
                         // Store all logs
@@ -1896,6 +1933,7 @@ include_navigation();
                 })
                 .catch(error => {
                     console.error('Error fetching logs:', error);
+                    updateMainPageHolidayWeekBanner({});
                     const msg = error.message || 'Error loading logs. Please try again.';
                     tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger py-4" style="display: block; padding-left: 0.5rem !important;">' + msg + '</td></tr>';
                     document.getElementById('paginationContainer').style.display = 'none';
@@ -1972,7 +2010,7 @@ include_navigation();
                         officialTimesData = await getOfficialTimesForDate(log.log_date);
                     } catch (error) {
                         console.error('Error fetching official times for log:', log.id, error);
-                        officialTimesData = { found: false, times: DEFAULT_OFFICIAL_TIMES };
+                        officialTimesData = { found: false, holidayWeekEightHour: false, times: DEFAULT_OFFICIAL_TIMES };
                     }
                     
                     // Calculate hours, late, undertime, overtime, absent (same logic as Employee Management DTR)
@@ -2475,11 +2513,14 @@ include_navigation();
                     }
                 
                     const hoursFormat = hours > 0 ? hours.toFixed(2) : '<span class="text-muted">-</span>';
+                    const hw8LogBadge = (officialTimesData && officialTimesData.holidayWeekEightHour)
+                        ? ' <span class="badge rounded-pill" style="font-size:0.65rem;background:#cfe2ff;color:#084298;font-weight:600;" title="Holiday week: late and undertime use the standard 8-hour schedule (08:00–12:00, 13:00–17:00).">8h week</span>'
+                        : '';
                     const dayCellContent = (log.is_holiday && !log.has_holiday_attendance)
                         ? (isHalfDayHoliday
-                            ? `${logDate} <span class="badge bg-warning text-dark ms-1">${halfDayPeriod === 'afternoon' ? 'Half-day PM' : 'Half-day AM'}</span>${pardonStatusBadge}`
-                            : `${logDate} <span class="badge bg-danger ms-1">Holiday</span>${pardonStatusBadge}`)
-                        : `${logDate}${pardonStatusBadge}`;
+                            ? `${logDate}${hw8LogBadge} <span class="badge bg-warning text-dark ms-1">${halfDayPeriod === 'afternoon' ? 'Half-day PM' : 'Half-day AM'}</span>${pardonStatusBadge}`
+                            : `${logDate}${hw8LogBadge} <span class="badge bg-danger ms-1">Holiday</span>${pardonStatusBadge}`)
+                        : `${logDate}${hw8LogBadge}${pardonStatusBadge}`;
                     const showTarfInTimeCells = (remarksStr.indexOf('TARF_HOURS_CREDIT:') !== -1
                             && (log.tarf_id || remarksStr.indexOf('TARF:') === 0))
                         || (Number(log.tarf_id) > 0 && remarksStr.indexOf('TARF:') === 0);
@@ -2698,6 +2739,8 @@ include_navigation();
         let dtrAllLogs = [];
         let dtrOfficialRegular = '08:00-12:00, 13:00-17:00';
         let dtrOfficialSaturday = '—';
+        let dtrOfficialByDate = {};
+        let dtrHolidayWeekEightHourDates = {};
         let dtrInCharge = '<?php echo addslashes(htmlspecialchars(trim($dtrInCharge), ENT_QUOTES)); ?>';
 
         function showDtrLoading(show) {
@@ -2731,6 +2774,13 @@ include_navigation();
                     dtrAllLogs = (data.success && data.logs) ? data.logs : [];
                     dtrOfficialRegular = data.official_regular || '08:00-12:00, 13:00-17:00';
                     dtrOfficialSaturday = data.official_saturday || '—';
+                    dtrOfficialByDate = (data.success && data.official_by_date && typeof data.official_by_date === 'object') ? data.official_by_date : {};
+                    dtrHolidayWeekEightHourDates = {};
+                    if (Array.isArray(data.holiday_week_eight_hour_dates)) {
+                        data.holiday_week_eight_hour_dates.forEach(function (d) {
+                            if (d && typeof d === 'string') dtrHolidayWeekEightHourDates[d] = true;
+                        });
+                    }
                     dtrInCharge = data.in_charge || '';
                     document.getElementById('dtrOfficialRegular').textContent = dtrOfficialRegular;
                     document.getElementById('dtrOfficialSat').textContent = dtrOfficialSaturday;
@@ -2740,6 +2790,8 @@ include_navigation();
                 })
                 .catch(() => {
                     dtrAllLogs = [];
+                    dtrOfficialByDate = {};
+                    dtrHolidayWeekEightHourDates = {};
                     renderDTR();
                     showDtrLoading(false);
                 });
@@ -2787,6 +2839,20 @@ include_navigation();
             });
             const regOfficial = parseOfficialTimes(dtrOfficialRegular || '08:00-12:00, 13:00-17:00');
             const satOfficial = parseOfficialTimes(dtrOfficialSaturday || '—');
+            const noticeEl = document.getElementById('dtrHolidayWeekNotice');
+            let hwNoticeShown = false;
+            for (let dShow = 1; dShow <= 31; dShow++) {
+                const chk = new Date(parseInt(year, 10), parseInt(month, 10) - 1, dShow);
+                if (chk.getMonth() !== parseInt(month, 10) - 1) continue;
+                const dkShow = year + '-' + month + '-' + String(dShow).padStart(2, '0');
+                if (dtrHolidayWeekEightHourDates && dtrHolidayWeekEightHourDates[dkShow]) {
+                    hwNoticeShown = true;
+                    break;
+                }
+            }
+            if (noticeEl) {
+                noticeEl.classList.toggle('d-none', !hwNoticeShown);
+            }
             for (let day = 1; day <= 31; day++) {
                 const dayStr = String(day).padStart(2, '0');
                 const dateKey = year + '-' + month + '-' + dayStr;
@@ -2798,9 +2864,20 @@ include_navigation();
                 const timeOut = log ? blankIfZero(log.time_out) : '';
                 let utHrs = '—', utMin = '—';
                 const isLeave = (timeIn === 'LEAVE' || lunchOut === 'LEAVE' || lunchIn === 'LEAVE' || timeOut === 'LEAVE');
+                const hw8Badge = (dtrHolidayWeekEightHourDates && dtrHolidayWeekEightHourDates[dateKey])
+                    ? ' <span class="badge rounded-pill align-middle" style="font-size:0.55rem;vertical-align:middle;background:#cfe2ff;color:#084298;font-weight:600;" title="Holiday week policy: undertime uses the standard 8-hour day (08:00–12:00, 13:00–17:00).">8h week</span>'
+                    : '';
                 if (log && !isLeave) {
                     const isSaturday = new Date(parseInt(year, 10), parseInt(month, 10) - 1, day).getDay() === 6;
-                    const official = isSaturday ? satOfficial : regOfficial;
+                    let official = isSaturday ? satOfficial : regOfficial;
+                    if (dtrOfficialByDate && dtrOfficialByDate[dateKey]) {
+                        const od = dtrOfficialByDate[dateKey];
+                        official = {
+                            lunchOut: typeof od.lunch_out === 'number' ? od.lunch_out : 720,
+                            lunchIn: typeof od.lunch_in === 'number' ? od.lunch_in : 780,
+                            timeOut: typeof od.time_out === 'number' ? od.time_out : 1020
+                        };
+                    }
                     let undertimeMinutes = 0;
                     const hasLunchOut = lunchOut && String(lunchOut).trim();
                     const hasLunchIn = lunchIn && String(lunchIn).trim();
@@ -2821,7 +2898,7 @@ include_navigation();
                     }
                 }
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td class="dtr-day">' + day + '</td><td class="dtr-time">' + timeIn + '</td><td class="dtr-time">' + lunchOut + '</td><td class="dtr-time">' + lunchIn + '</td><td class="dtr-time">' + timeOut + '</td><td class="dtr-undertime">' + utHrs + '</td><td class="dtr-undertime">' + utMin + '</td>';
+                tr.innerHTML = '<td class="dtr-day">' + day + hw8Badge + '</td><td class="dtr-time">' + timeIn + '</td><td class="dtr-time">' + lunchOut + '</td><td class="dtr-time">' + lunchIn + '</td><td class="dtr-time">' + timeOut + '</td><td class="dtr-undertime">' + utHrs + '</td><td class="dtr-undertime">' + utMin + '</td>';
                 tbody.appendChild(tr);
             }
             const totalRow = document.createElement('tr');
@@ -3293,6 +3370,7 @@ include_navigation();
                         <div class="dtr-field-row">For the month of <span id="dtrMonthLabel" class="dtr-field-inline"></span></div>
                         <div class="dtr-official-row">Official hours for arrival and departure</div>
                         <div class="dtr-official-row">Regular days <span id="dtrOfficialRegular" class="dtr-field-inline">08:00-12:00, 13:00-17:00</span> Saturdays <span id="dtrOfficialSat" class="dtr-field-inline">—</span></div>
+                        <div id="dtrHolidayWeekNotice" class="alert alert-primary py-2 px-3 small mb-2 d-none" role="status"><i class="fas fa-calendar-week me-1"></i>Dates labeled <strong>8h week</strong> fall in your <strong>current</strong> calendar week (Sun–Sat) that includes a holiday: late and undertime use the <strong>standard 8-hour day</strong> (08:00–12:00, 13:00–17:00). All other days use your saved official schedule.</div>
                         <div class="dtr-table-wrap">
                         <p class="dtr-scroll-hint"><i class="fas fa-arrows-alt-h me-1"></i>Scroll horizontally to see all columns</p>
                         <table class="dtr-table" role="grid">

@@ -15,6 +15,7 @@ require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/database.php';
 require_once '../includes/staff_dtr_month_data.php';
+require_once '../includes/calendar_holiday_week_schedule.php';
 
 requireAdmin();
 
@@ -1173,6 +1174,7 @@ try {
         $totalAbsentHoursForDays = 0;
         foreach ($logs as $log) {
             $res = getOfficialTimesForDate($log['log_date'], $official_times_list, $default_official_times);
+            $res = calendar_holiday_week_apply_print_official_bundle($res, $db, (string) ($log['log_date'] ?? ''));
             $official = $res['official'];
             $fromDb = $res['from_db'];
             $hasLunch = $res['has_lunch'];
@@ -1316,6 +1318,7 @@ try {
                         $counter = 1;
                         foreach ($logs as $log): 
                             $res = getOfficialTimesForDate($log['log_date'], $official_times_list, $default_official_times);
+                            $res = calendar_holiday_week_apply_print_official_bundle($res, $db, (string) ($log['log_date'] ?? ''));
                             $official = $res['official'];
                             $fromDb = $res['from_db'];
                             $hasLunch = $res['has_lunch'];

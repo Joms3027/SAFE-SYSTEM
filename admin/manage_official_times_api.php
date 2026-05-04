@@ -2,6 +2,7 @@
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/database.php';
+require_once '../includes/calendar_holiday_week_schedule.php';
 
 // Allow both admin and faculty access
 // Admin can access any employee_id, faculty can only access their own
@@ -114,8 +115,9 @@ try {
             $stmt->execute([$employee_id, $weekday, $date, $date]);
             $officialTime = $stmt->fetch(PDO::FETCH_ASSOC);
             
+            $dateNorm = substr((string) $date, 0, 10);
             if ($officialTime) {
-                echo json_encode([
+                $response = [
                     'success' => true,
                     'official_time' => [
                         'found' => true,
@@ -127,18 +129,34 @@ try {
                         'lunch_in' => ($officialTime['lunch_in'] && $officialTime['lunch_in'] != '00:00:00') ? substr($officialTime['lunch_in'], 0, 5) : '',
                         'time_out' => substr($officialTime['time_out'], 0, 5)
                     ]
-                ]);
+                ];
             } else {
                 // No official time found for this weekday and date range
-                echo json_encode([
+                $response = [
                     'success' => true,
                     'official_time' => [
                         'found' => false,
                         'weekday' => $weekday,
                         'reason' => 'No official time set'
                     ]
-                ]);
+                ];
             }
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateNorm) && calendar_should_apply_holiday_week_eight_hours($db, $dateNorm)) {
+                $response['official_time'] = [
+                    'found' => true,
+                    'weekday' => $weekday,
+                    'start_date' => null,
+                    'end_date' => null,
+                    'time_in' => '08:00',
+                    'lunch_out' => '12:00',
+                    'lunch_in' => '13:00',
+                    'time_out' => '17:00',
+                    'holiday_week_eight_hour' => true,
+                ];
+            } else {
+                $response['official_time']['holiday_week_eight_hour'] = false;
+            }
+            echo json_encode($response);
             exit;
         }
         

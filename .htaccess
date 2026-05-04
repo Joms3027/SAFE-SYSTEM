@@ -21,6 +21,11 @@ Options +FollowSymLinks
     # 
     # ⚠️ IMPORTANT: Must match the URL path of this folder (XAMPP: /FP/). Use / for document-root deploy.
     RewriteBase /FP/
+
+    # Default browser request for /favicon.ico — avoid 404 noise when no file is deployed
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} favicon\.ico$ [NC]
+    RewriteRule ^ - [R=204,L]
     
     # Force HTTPS in production (uncomment when using SSL)
     # ⚠️ IMPORTANT: Uncomment these lines after SSL certificate is configured

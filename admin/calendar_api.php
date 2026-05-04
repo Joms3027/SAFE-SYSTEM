@@ -13,10 +13,11 @@ require_once '../includes/database.php';
 require_once '../includes/mailer.php';
 require_once '../includes/notifications.php';
 require_once '../includes/tarf_calendar_kind.php';
+require_once dirname(__DIR__) . '/includes/calendar_holiday_week_schedule.php';
 
 // Bump when adding migrations below so the cache is invalidated once.
 if (!defined('CALENDAR_API_SCHEMA_VERSION')) {
-    define('CALENDAR_API_SCHEMA_VERSION', 4);
+    define('CALENDAR_API_SCHEMA_VERSION', 5);
 }
 
 // Ensure session is active before accessing $_SESSION
@@ -169,6 +170,7 @@ try {
         if (!is_dir($cacheDir)) {
             @mkdir($cacheDir, 0755, true);
         }
+        calendar_holiday_week_schedule_ensure_table($db);
         @file_put_contents($calendarSchemaCacheFile, date('c'), LOCK_EX);
     }
     
@@ -539,6 +541,7 @@ try {
     
     // Helper function to get official times for an employee on a specific date
     function getOfficialTimesForDate($employeeId, $date, $db) {
+        $dateNorm = strlen((string) $date) >= 10 ? substr((string) $date, 0, 10) : (string) $date;
         // Get weekday from date
         $dateObj = new DateTime($date);
         $dayOfWeek = $dateObj->format('w'); // 0 (Sunday) to 6 (Saturday)
@@ -559,18 +562,25 @@ try {
         if ($officialTime) {
             $sched = official_schedule_from_official_time_row($officialTime, $date);
             if ($sched !== null) {
+                if ($dateNorm !== '' && calendar_should_apply_holiday_week_eight_hours($db, $dateNorm)) {
+                    return calendar_holiday_week_standard_ot_row();
+                }
                 return $sched;
             }
         }
         
         // Default times if no official time found
-        return [
+        $fallback = [
             'found' => false,
             'time_in' => '08:00:00',
             'lunch_out' => '12:00:00',
             'lunch_in' => '13:00:00',
             'time_out' => '17:00:00'
         ];
+        if ($dateNorm !== '' && calendar_should_apply_holiday_week_eight_hours($db, $dateNorm)) {
+            return calendar_holiday_week_standard_ot_row();
+        }
+        return $fallback;
     }
 
     /** @return array{found:bool,time_in:mixed,lunch_out:mixed,lunch_in:mixed,time_out:mixed}|null */
@@ -647,6 +657,13 @@ try {
             $sched = official_schedule_from_official_time_row($row, $date);
             $resolved[$eid] = true;
             $result[$eid] = $sched !== null ? $sched : $defaultOt;
+        }
+        $dateNorm = strlen((string) $date) >= 10 ? substr((string) $date, 0, 10) : (string) $date;
+        if ($dateNorm !== '' && calendar_should_apply_holiday_week_eight_hours($db, $dateNorm)) {
+            $stdRow = calendar_holiday_week_standard_ot_row();
+            foreach ($idList as $eid) {
+                $result[$eid] = $stdRow;
+            }
         }
         return $result;
     }
@@ -2253,8 +2270,17 @@ try {
             exit();
         }
         
+    } elseif ($method === 'GET' && $action === 'holiday_week_eight_hour_get') {
+        requireAdmin();
+        echo json_encode(['success' => true, 'enabled' => calendar_holiday_week_eight_hour_enabled($db)]);
+    } elseif ($method === 'POST' && $action === 'holiday_week_eight_hour_save') {
+        requireAdmin();
+        $enabled = isset($_POST['enabled']) && $_POST['enabled'] !== '' && $_POST['enabled'] !== '0';
+        calendar_holiday_week_eight_hour_set($db, $enabled);
+        echo json_encode(['success' => true]);
+
     // ========== HOLIDAY ENDPOINTS ==========
-    
+        
     } elseif ($method === 'POST' && $action === 'create_holiday') {
         // Create Holiday (admin only)
         requireAdmin();

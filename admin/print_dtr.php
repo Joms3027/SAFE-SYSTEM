@@ -3,6 +3,7 @@ require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/database.php';
 require_once '../includes/staff_dtr_month_data.php';
+require_once '../includes/calendar_holiday_week_schedule.php';
 
 requireAdmin();
 
@@ -891,6 +892,7 @@ try {
         
         // Get official times for this log date (from_db = true when Employee Management would show official time)
         $res = getOfficialTimesForDate($log['log_date'], $official_times_list, $default_official_times);
+        $res = calendar_holiday_week_apply_print_official_bundle($res, $db, (string) ($log['log_date'] ?? ''));
         $official = $res['official'];
         $hasOfficialTime = $res['from_db'];
         $hasLunch = $res['has_lunch'];
@@ -1227,6 +1229,7 @@ try {
                 foreach ($logs as $log): 
                     // Get official times for this log date (from_db = true when Employee Management would show official time)
                     $res = getOfficialTimesForDate($log['log_date'], $official_times_list, $default_official_times);
+        $res = calendar_holiday_week_apply_print_official_bundle($res, $db, (string) ($log['log_date'] ?? ''));
                     $official = $res['official'];
                     $hasOfficialTime = $res['from_db'];
                     $hasLunch = $res['has_lunch'];

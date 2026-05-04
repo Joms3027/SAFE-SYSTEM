@@ -976,6 +976,13 @@ if ($nextMonth > 12) {
                 width: 100%;
                 justify-content: center;
             }
+            
+            .calendar-schedule-setting {
+                font-size: 0.8125rem;
+            }
+            .calendar-schedule-setting .form-check-label strong {
+                font-weight: 600;
+            }
         }
     </style>
 </head>
@@ -1002,6 +1009,14 @@ if ($nextMonth > 12) {
 
                 <div class="calendar-container">
                     <div class="calendar-wrapper">
+                        <div class="calendar-schedule-setting alert alert-secondary border-0 py-2 px-3 mb-3 small shadow-sm">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="holidayWeekEightHourSwitch" role="switch">
+                                <label class="form-check-label" for="holidayWeekEightHourSwitch">
+                                    <strong>Holiday week:</strong> when today is inside a Sunday–Saturday week that contains a holiday (from admin holidays or calendar holiday events), late/undertime follow a standard 8-hour schedule (08:00–12:00, 13:00–17:00). Other calendar weeks—and any week viewed after Sunday has moved on—keep each employee's saved official times.
+                                </label>
+                            </div>
+                        </div>
                         <div class="calendar-header">
                             <div class="calendar-header-info">
                                 <h3>
@@ -3248,6 +3263,38 @@ if ($nextMonth > 12) {
 
         // Load events on page load
         document.addEventListener('DOMContentLoaded', function() {
+            const hwSw = document.getElementById('holidayWeekEightHourSwitch');
+            if (hwSw) {
+                fetch('calendar_api.php?action=holiday_week_eight_hour_get')
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d && d.success && typeof d.enabled !== 'undefined') {
+                            hwSw.checked = !!d.enabled;
+                        }
+                    })
+                    .catch(() => {});
+                hwSw.addEventListener('change', function() {
+                    const fd = new FormData();
+                    fd.append('action', 'holiday_week_eight_hour_save');
+                    fd.append('enabled', hwSw.checked ? '1' : '0');
+                    fetch('calendar_api.php', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (!d || !d.success) {
+                                hwSw.checked = !hwSw.checked;
+                                if (typeof showMessage === 'function') {
+                                    showMessage('error', (d && d.message) ? d.message : 'Could not save weekly schedule rule');
+                                }
+                            }
+                        })
+                        .catch(() => {
+                            hwSw.checked = !hwSw.checked;
+                            if (typeof showMessage === 'function') {
+                                showMessage('error', 'Could not save weekly schedule rule');
+                            }
+                        });
+                });
+            }
             loadEvents();
             updateEventColor();
             

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End-user manual — Requesting TARF &amp; NTARF</title>
+    <style>
+        :root {
+            --ink: #0f172a;
+            --muted: #475569;
+            --border: #e2e8f0;
+            --accent: #003366;
+            --accent-soft: rgba(0, 51, 102, 0.08);
+            --ok: #047857;
+            --warn-bg: #fffbeb;
+            --info-bg: #eff6ff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: var(--ink);
+            line-height: 1.55;
+            max-width: 52rem;
+            margin: 0 auto;
+            padding: 1.5rem clamp(1rem, 4vw, 2rem) 3rem;
+        }
+        h1 {
+            font-size: clamp(1.35rem, 4vw, 1.65rem);
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent-soft);
+            padding-bottom: 0.35rem;
+            margin-top: 0;
+        }
+        h2 {
+            font-size: 1.15rem;
+            color: var(--accent);
+            margin-top: 2rem;
+            margin-bottom: 0.65rem;
+        }
+        h3 {
+            font-size: 1rem;
+            margin-top: 1.25rem;
+            margin-bottom: 0.35rem;
+        }
+        p, li { color: var(--ink); }
+        .lead {
+            font-size: 1.05rem;
+            color: var(--muted);
+        }
+        nav.toc {
+            background: var(--accent-soft);
+            border-radius: 0.5rem;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0 2rem;
+        }
+        nav.toc ol { margin: 0.35rem 0 0 1rem; padding: 0; }
+        nav.toc a { color: var(--accent); }
+        .callout {
+            border-left: 4px solid var(--accent);
+            background: var(--info-bg);
+            padding: 0.85rem 1rem;
+            margin: 1rem 0;
+            border-radius: 0 0.35rem 0.35rem 0;
+            font-size: 0.95rem;
+        }
+        .callout.warn {
+            border-color: #b45309;
+            background: var(--warn-bg);
+        }
+        .callout strong { display: block; margin-bottom: 0.35rem; }
+        ol.steps, ul.check {
+            padding-left: 1.35rem;
+        }
+        ol.steps li { margin: 0.5rem 0; }
+        table.fields {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin: 0.75rem 0;
+        }
+        table.fields th, table.fields td {
+            border: 1px solid var(--border);
+            padding: 0.5rem 0.65rem;
+            vertical-align: top;
+            text-align: left;
+        }
+        table.fields th { background: #f8fafc; font-weight: 600; width: 32%; }
+        code { font-size: 0.88em; background: #f1f5f9; padding: 0.1em 0.35em; border-radius: 0.2rem; }
+        footer.meta {
+            margin-top: 2.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        @media print {
+            nav.toc { break-after: avoid; }
+            h2 { break-after: avoid; }
+            .callout { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>End-user manual: requesting a TARF or NTARF</h1>
+    <p class="lead">
+        This guide is for faculty and staff who submit <strong>TARF</strong> (Travel Activity Request Form) or <strong>NTARF</strong> (Non-Travel Activity Request Form) through the WPU Faculty Portal.
+    </p>
+
+    <nav class="toc" aria-label="Table of contents">
+        <strong>Contents</strong>
+        <ol>
+            <li><a href="#where">Where to go</a></li>
+            <li><a href="#choose">TARF vs NTARF — which form?</a></li>
+            <li><a href="#workflow">After you submit — approval workflow</a></li>
+            <li><a href="#track">Tracking, print, and PDF</a></li>
+            <li><a href="#tarf-steps">Step-by-step: TARF (travel)</a></li>
+            <li><a href="#ntarf-steps">Step-by-step: NTARF (non-travel)</a></li>
+            <li><a href="#tips">Tips and common issues</a></li>
+        </ol>
+    </nav>
+
+    <h2 id="where">1. Where to go</h2>
+    <ol class="steps">
+        <li>Sign in to the <strong>Faculty Portal</strong> with your account.</li>
+        <li>Open the sidebar and click <strong>TARF Request</strong> (also titled “Activity requests — TARF &amp; NTARF”).</li>
+        <li>At the top of the page, use the tabs: <strong>TARF (Travel)</strong> or <strong>NTARF (Non-travel)</strong>.</li>
+        <li>Use <strong>My requests</strong> to open your recent submissions (up to 15), including pending and rejected.</li>
+    </ol>
+
+    <h2 id="choose">2. TARF vs NTARF — which form?</h2>
+    <table class="fields" role="presentation">
+        <thead>
+            <tr>
+                <th scope="col">Form</th>
+                <th scope="col">Use it when</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>TARF</strong></td>
+                <td>You or listed personnel need <strong>travel</strong> (off-site: conference, training, official business elsewhere, etc.). The system can apply attendance rules suited to travel.</td>
+            </tr>
+            <tr>
+                <td><strong>NTARF</strong></td>
+                <td>The activity is <strong>non-travel</strong> — on-campus, or a declared venue/meeting setup. <strong>You must still use the timekeeper</strong> (time in, lunch out, lunch in, time out) on each activity day. NTARF approval does <em>not</em> replace DTR/timekeeper logs.</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="callout warn">
+        <strong>Important for NTARF</strong>
+        File <strong>one NTARF per discrete activity</strong> (single session, venue, or time block). Mixed venues usually need separate forms.
+    </div>
+
+    <h2 id="workflow">3. After you submit — approval workflow</h2>
+    <p>Routing is parallel where noted: several offices can act without a fixed sequence until all required endorsements exist.</p>
+    <ul class="check">
+        <li><strong>Immediate supervisor</strong> (or college/office account you enter) must endorse.</li>
+        <li><strong>Applicable endorser</strong> (you choose from the list) must endorse.</li>
+        <li>If your answers require <strong>fund certification</strong> (see forms below): <strong>Budget or Accounting</strong> must also endorse.</li>
+        <li>When all required endorsements are complete, the request goes to the <strong>President</strong> for final approval.</li>
+        <li>Statuses you may see include “Awaiting endorsements,” “With President (final),” “Approved,” or “Rejected.”</li>
+    </ul>
+
+    <h2 id="track">4. Tracking, print, and PDF</h2>
+    <ul class="check">
+        <li><strong>My requests</strong> lists recent submissions; open one to preview the printable layout.</li>
+        <li>For your own pending request, progress may show parallel lines such as Supervisor, Applicable endorser, and Budget/Accounting when applicable.</li>
+        <li>After status is fully <strong>approved (endorsed)</strong>, use <strong>Download PDF</strong> or <strong>Print</strong> from the full request view.</li>
+    </ul>
+
+    <h2 id="tarf-steps">5. Step-by-step: TARF (travel)</h2>
+    <p>Complete sections from top to bottom. Fields marked required on screen must be filled before the system accepts the submission.</p>
+
+    <h3>Requester</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Name / Email</th><td>Pre-filled when possible; correct if outdated.</td></tr>
+            <tr><th>College / Office / Project</th><td>Choose from list, or Other and type the unit.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Details of travel</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Type / purpose category</th><td>Required dropdown.</td></tr>
+            <tr><th>Event / purpose</th><td>Describe the program, training, conference, etc.</td></tr>
+            <tr><th>Person/s to travel</th><td>Select people from the directory (search helps), and/or list <strong>Additional travelers</strong> (guests, students).</td></tr>
+            <tr><th>Destination(s)</th><td>Where travel occurs.</td></tr>
+            <tr><th>Justification</th><td>Explain why travel is needed.</td></tr>
+            <tr><th>COS or JO</th><td>Answer whether any travelers are COS or JO (required radio).</td></tr>
+            <tr><th>Departure / return dates</th><td>Return must not be before departure.</td></tr>
+            <tr><th>Supporting documents</th><td>Optional — up to 10 files (PDF, Word, or images).</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Endorsement &amp; publicity</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Applicable endorser</th><td>Required — pick the role/office that fits your route.</td></tr>
+            <tr><th>Supervisor / unit email</th><td>Valid email where endorsement will be routed (e.g. unit mailbox).</td></tr>
+            <tr><th>Publicity / coverage</th><td><strong>Select at least one</strong> option (including N/A if listed). Optionally add notes under Other.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Travel type &amp; support</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Type of travel</th><td>Required radio (e.g. official business vs other types).</td></tr>
+            <tr><th>Requested support</th><td><strong>Select at least one checkbox</strong> <em>or</em> explain under the “Other support” text area.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Funding (appears only for Official Business)</h3>
+    <p>When <strong>Type of travel</strong> is Official Business, a funding section becomes required:</p>
+    <ul class="check">
+        <li><strong>Funding charged to</strong> and <strong>Funding specifier</strong> (choose or specify Other).</li>
+        <li><strong>Endorser for fund availability</strong> — Budget or Accounting role as instructed on the form.</li>
+        <li><strong>Total estimated amount (IOT + LIB)</strong>.</li>
+        <li>Optional uploads: itinerary (IOT), line item budget (LIB).</li>
+    </ul>
+
+    <p>Click <strong>Submit TARF</strong>. Fix any error message shown before resubmitting.</p>
+
+    <h2 id="ntarf-steps">6. Step-by-step: NTARF (non-travel)</h2>
+    <div class="callout">
+        <strong>Time entry reminder</strong>
+        Everyone involved must clock time in/out and lunch breaks at the timekeeper on each activity day.
+    </div>
+
+    <h3>Requester</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Email / Name</th><td>Required.</td></tr>
+            <tr><th>College / Office / Project</th><td>Same pattern as TARF (list or Other).</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Details of activity</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Activity requested</th><td>Title of program, training, etc. For repeated sessions of one event, prefix with session number.</td></tr>
+            <tr><th>Justification</th><td>Required narrative.</td></tr>
+            <tr><th>Main organizer</th><td>Person or unit.</td></tr>
+            <tr><th>Campus as venue</th><td>Required. If activity is outside all campuses, pick the “outside campus” choice and type the exact location.</td></tr>
+            <tr><th>Venue</th><td>One venue only per form — separate NTARF per different location.</td></tr>
+            <tr><th>Dates / times</th><td>Start and end date; start and end time of activity.</td></tr>
+            <tr><th>Involved WPU personnel</th><td>Pick from directory and/or Additional involved personnel lines.</td></tr>
+            <tr><th>Type of involvement</th><td>At least one checkbox <em>or</em> explain under Other involvement.</td></tr>
+            <tr><th>Supporting documents</th><td>Optional — invitations, acceptance letters, etc.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Requested support &amp; Support requested</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Requested support</th><td>At least one checkbox <em>or</em> complete the “other support” text when nothing applies.</td></tr>
+            <tr><th>Publicity / coverage</th><td>At least one option (same rule as TARF).</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Endorsement</h3>
+    <table class="fields">
+        <tbody>
+            <tr><th>Applicable endorser</th><td>Required.</td></tr>
+            <tr><th>Endorser for venue availability</th><td>Required.</td></tr>
+            <tr><th>Supervisor / unit email</th><td>Valid email.</td></tr>
+            <tr><th>Endorser for electricity and generator use</th><td>Required.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Funding</h3>
+    <ul class="check">
+        <li>Answer <strong>Is university funding being requested?</strong> (Yes / No).</li>
+        <li>If <strong>Yes</strong>: complete funding charged to, specifier, endorser for fund availability, and optional LIB upload.</li>
+        <li><strong>Total estimated amount</strong> is always required — enter <strong>0</strong> when not applicable.</li>
+    </ul>
+
+    <p>Click <strong>Submit NTARF</strong>.</p>
+
+    <h2 id="tips">7. Tips and common issues</h2>
+    <ul class="check">
+        <li><strong>Emails must be valid.</strong> Invalid requester or supervisor/unit email will block submission.</li>
+        <li><strong>Applicants / endorsers not in the map:</strong> If the system reports that an applicable endorser is not linked to a portal account, notify your administrator.</li>
+        <li><strong>Fund availability:</strong> If Budget or Accounting designate no active officer for your selection, HR may need to assign the role.</li>
+        <li><strong>DTR / pardons:</strong> Some attendance adjustments use separate pardon flows (including TARF/NTARF-related pardons); this guide focuses on submitting the activity request forms only.</li>
+        <li><strong>Admin calendar “Add TARF”:</strong> That feature (admin calendar) schedules travel vs on-site NTARF for groups in the institutional calendar — it is not the same screen as faculty <strong>TARF Request</strong> submissions.</li>
+    </ul>
+
+    <footer class="meta">
+        <p>For technical setup (database migrations), administrators may reference the project migration runner for TARF and NTARF. End users normally only need this portal page and endorsement contacts.</p>
+    </footer>
+
+</body>
+</html>

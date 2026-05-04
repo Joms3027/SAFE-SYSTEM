@@ -2,6 +2,7 @@
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 require_once '../includes/database.php';
+require_once '../includes/calendar_holiday_week_schedule.php';
 
 requireAdmin();
 
@@ -291,6 +292,9 @@ $monthLabel = date('F Y', strtotime($dateFrom));
             $isTarfDay = ($timeIn === 'TRAVEL' || $lunchOut === 'TRAVEL' || $lunchIn === 'TRAVEL' || $timeOut === 'TRAVEL');
             $isSaturday = $dtr['log_date'] ? (int)date('w', strtotime($dtr['log_date'])) === 6 : false;
             $official = $parseOfficialTimes($isSaturday ? $dtr['official_saturday'] : $dtr['official_regular']);
+            if ($dtr['log_date'] !== '' && calendar_should_apply_holiday_week_eight_hours($db, $dtr['log_date'])) {
+                $official = ['lunch_out' => 12 * 60, 'lunch_in' => 13 * 60, 'time_out' => 17 * 60];
+            }
             $undertimeMinutes = 0;
             if (!$isTarfDay) {
                 if ($lunchOut !== '' && trim($lunchOut) !== '' && $lunchOut !== '00:00' && $lunchOut !== '0:00') {

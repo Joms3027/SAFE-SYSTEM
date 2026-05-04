@@ -206,6 +206,9 @@ try {
                 }
             }
         }
+        if (calendar_should_apply_holiday_week_eight_hours($db, $dateStr)) {
+            $official = calendar_holiday_week_standard_official_by_date_minutes();
+        }
         $official_by_date[$dateStr] = $official;
         $d->add($interval);
     }

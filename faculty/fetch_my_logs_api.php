@@ -327,6 +327,19 @@ try {
             ];
         }
 
+        // Date range for absent-day logic and pardon_open prefetch (must be set before first use)
+        $absent_date_from = $date_from;
+        $absent_date_to = $date_to;
+        if (empty($absent_date_from) || empty($absent_date_to)) {
+            foreach ($logs as $log) {
+                $d = $log['log_date'] ?? null;
+                if ($d) {
+                    if (empty($absent_date_from) || $d < $absent_date_from) $absent_date_from = $d;
+                    if (empty($absent_date_to) || $d > $absent_date_to) $absent_date_to = $d;
+                }
+            }
+        }
+
         // For absent days we need pardon_open by (employee_id, log_date); fetch set of opened dates if table exists
         $pardonOpenDates = [];
         if ($hasPardonOpenTable && ($absent_date_from || $absent_date_to || count($logs) > 0)) {
@@ -349,17 +362,6 @@ try {
         }
 
         // Add absent days: employee has official time for a day but did not come in (no log)
-        $absent_date_from = $date_from;
-        $absent_date_to = $date_to;
-        if (empty($absent_date_from) || empty($absent_date_to)) {
-            foreach ($logs as $log) {
-                $d = $log['log_date'] ?? null;
-                if ($d) {
-                    if (empty($absent_date_from) || $d < $absent_date_from) $absent_date_from = $d;
-                    if (empty($absent_date_to) || $d > $absent_date_to) $absent_date_to = $d;
-                }
-            }
-        }
         if ($absent_date_from && $absent_date_to) {
             // Ensure absent_cleared table exists (for tracking cleared absents)
             try {
@@ -483,14 +485,82 @@ try {
         if ($in_charge === 'HR') {
             $in_charge = '';
         }
+
+        $official_by_date = [];
+        $holiday_week_eight_hour_dates = [];
+        if (!empty($date_from) && !empty($date_to)) {
+            $weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            $defaultOfficial = ['lunch_out' => 12 * 60, 'lunch_in' => 13 * 60, 'time_out' => 17 * 60];
+            $parseMin = function ($t) {
+                if (!$t) {
+                    return null;
+                }
+                $p = explode(':', $t);
+                return count($p) >= 2 ? (((int)$p[0]) * 60) + ((int)$p[1]) : null;
+            };
+            $stmtOTAll = $db->prepare("SELECT weekday, start_date, end_date, time_in, lunch_out, lunch_in, time_out FROM employee_official_times WHERE employee_id = ? ORDER BY start_date DESC");
+            $stmtOTAll->execute([$employee_id]);
+            $official_times_list_ot = $stmtOTAll->fetchAll(PDO::FETCH_ASSOC);
+            $dOt = new DateTime($date_from);
+            $endOt = (new DateTime($date_to))->modify('+1 day');
+            $intervalOt = new DateInterval('P1D');
+            while ($dOt < $endOt) {
+                $dateStr = $dOt->format('Y-m-d');
+                $logWeekday = $weekdays[(int)$dOt->format('w')];
+                $official = $defaultOfficial;
+                $mostRecentStart = null;
+                foreach ($official_times_list_ot as $ot) {
+                    $sd = $ot['start_date'] ?? null;
+                    $ed = $ot['end_date'] ?? null;
+                    $w = trim($ot['weekday'] ?? '');
+                    if ($w === $logWeekday && $sd && $sd <= $dateStr && ($ed === null || $ed === '' || $ed >= $dateStr)) {
+                        if ($mostRecentStart === null || $sd > $mostRecentStart) {
+                            $mostRecentStart = $sd;
+                            $lo = $parseMin($ot['lunch_out']);
+                            $li = $parseMin($ot['lunch_in']);
+                            $to = $parseMin($ot['time_out']);
+                            $official = [
+                                'lunch_out' => $lo !== null ? $lo : $defaultOfficial['lunch_out'],
+                                'lunch_in' => $li !== null ? $li : $defaultOfficial['lunch_in'],
+                                'time_out' => $to !== null ? $to : $defaultOfficial['time_out'],
+                            ];
+                        }
+                    }
+                }
+                if (function_exists('calendar_should_apply_holiday_week_eight_hours') && calendar_should_apply_holiday_week_eight_hours($db, $dateStr)) {
+                    $official = calendar_holiday_week_standard_official_by_date_minutes();
+                    $holiday_week_eight_hour_dates[] = $dateStr;
+                }
+                $official_by_date[$dateStr] = $official;
+                $dOt->add($intervalOt);
+            }
+            $holiday_week_eight_hour_dates = array_values(array_unique($holiday_week_eight_hour_dates));
+            sort($holiday_week_eight_hour_dates);
+        }
+
+        /** True when today's date is in an active Sun–Sat holiday week (policy on and calendar includes holiday). */
+        $todayYmd = date('Y-m-d');
+        $holiday_week_eight_hour_active = function_exists('calendar_should_apply_holiday_week_eight_hours')
+            && calendar_should_apply_holiday_week_eight_hours($db, $todayYmd);
+        $holiday_week_eight_hour_week_end_display = '';
+        if ($holiday_week_eight_hour_active && function_exists('calendar_week_bounds_sunday_saturday')) {
+            $wbToday = calendar_week_bounds_sunday_saturday($todayYmd);
+            if (!empty($wbToday['saturday'])) {
+                $holiday_week_eight_hour_week_end_display = date('F j, Y', strtotime($wbToday['saturday']));
+            }
+        }
         
         echo json_encode([
-            'success' => true, 
-            'logs' => $logs, 
+            'success' => true,
+            'logs' => $logs,
             'count' => count($logs),
             'employee_id' => $employee_id,
             'official_regular' => $official_regular,
             'official_saturday' => $official_saturday,
+            'official_by_date' => $official_by_date,
+            'holiday_week_eight_hour_dates' => $holiday_week_eight_hour_dates,
+            'holiday_week_eight_hour_active' => $holiday_week_eight_hour_active,
+            'holiday_week_eight_hour_week_end_display' => $holiday_week_eight_hour_week_end_display,
             'in_charge' => $in_charge
         ]);
     } else {

@@ -4,6 +4,8 @@
  * Must be loaded with config/functions/database already available.
  */
 
+require_once __DIR__ . '/calendar_holiday_week_schedule.php';
+
 if (!function_exists('staff_dtr_normalize_time_hms')) {
     function staff_dtr_normalize_time_hms($t) {
         if ($t === null || $t === '') {
@@ -484,6 +486,9 @@ function staff_dtr_fetch_month_bundle(PDO $db, $employee_id, $date_from, $date_t
                     ];
                 }
             }
+        }
+        if (calendar_should_apply_holiday_week_eight_hours($db, $dateStr)) {
+            $official = calendar_holiday_week_standard_official_by_date_minutes();
         }
         $official_by_date[$dateStr] = $official;
         $d->add($interval);
