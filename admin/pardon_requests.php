@@ -875,7 +875,8 @@ $historyRequests = $historyStmt ? $historyStmt->fetchAll(PDO::FETCH_ASSOC) : [];
                 maternity_leave: 'Maternity Leave',
                 solo_parent_leave: 'Solo Parent Leave',
                 magna_carta_leave: 'Magna Carta Leave',
-                rehabilitation_leave: 'Rehabilitation Leave'
+                rehabilitation_leave: 'Rehabilitation Leave',
+                teachers_leave: 'Teachers Leave'
             };
             const pardonType = req.pardon_type || 'ordinary_pardon';
             document.getElementById('detailPardonType').textContent = pardonTypeLabels[pardonType] || pardonType.replace(/_/g, ' ');

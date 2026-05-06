@@ -1642,7 +1642,7 @@ include_navigation();
         let dtrCanSubmitDates = [];
         let rowsPerPage = 10;
 
-        const PARDON_TYPES_CALENDAR = ['tarf_ntarf', 'work_from_home', 'vacation_leave', 'sick_leave', 'special_privilege_leave', 'forced_mandatory_leave', 'special_emergency_leave', 'maternity_leave', 'solo_parent_leave', 'magna_carta_leave', 'rehabilitation_leave', 'wellness_leave'];
+        const PARDON_TYPES_CALENDAR = ['tarf_ntarf', 'work_from_home', 'vacation_leave', 'sick_leave', 'special_privilege_leave', 'forced_mandatory_leave', 'special_emergency_leave', 'maternity_leave', 'solo_parent_leave', 'magna_carta_leave', 'rehabilitation_leave', 'wellness_leave', 'teachers_leave'];
         
         // Helper function to get weekday name from date
         function getWeekdayName(dateStr) {
@@ -3163,6 +3163,7 @@ include_navigation();
                             <option value="magna_carta_leave">Magna Carta Leave</option>
                             <option value="rehabilitation_leave">Rehabilitation Leave</option>
                             <option value="wellness_leave">Wellness Leave</option>
+                            <option value="teachers_leave">Teachers Leave</option>
                         </select>
                         <div id="pardonTypeButtons" class="d-flex d-md-none flex-wrap gap-2">
                             <button type="button" class="btn btn-outline-primary btn-sm pardon-type-btn active" data-type="ordinary_pardon" title="Edit time entries">Ordinary Pardon</button>
@@ -3178,6 +3179,7 @@ include_navigation();
                             <button type="button" class="btn btn-outline-secondary btn-sm pardon-type-btn" data-type="magna_carta_leave">Magna Carta Leave</button>
                             <button type="button" class="btn btn-outline-secondary btn-sm pardon-type-btn" data-type="rehabilitation_leave">Rehabilitation Leave</button>
                             <button type="button" class="btn btn-outline-secondary btn-sm pardon-type-btn" data-type="wellness_leave">Wellness Leave</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm pardon-type-btn" data-type="teachers_leave">Teachers Leave</button>
                         </div>
                         <input type="hidden" id="pardonType" value="ordinary_pardon">
                         <small class="text-muted d-block mt-1 pardon-type-hint d-none d-md-block">Ordinary Pardon, TARF/NTARF, and Work from Home require time entry editing. Leave types show LEAVE in DTR; rendered hours follow your official time.</small>
