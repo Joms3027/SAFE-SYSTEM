@@ -1498,9 +1498,14 @@ include_navigation();
                                         </button>
                                     </div>
                                     <div class="col-md-2 d-flex align-items-end">
-                                        <button onclick="openDTRModal()" class="btn btn-outline-primary btn-sm w-100">
-                                            <i class="fas fa-file-alt me-1"></i> DTR
-                                        </button>
+                                        <div class="btn-group btn-group-sm w-100" role="group" aria-label="Daily time record">
+                                            <button type="button" onclick="openDTRModal()" class="btn btn-outline-primary" title="View Employee Daily Time Record">
+                                                <i class="fas fa-file-alt me-1"></i> DTR
+                                            </button>
+                                            <button type="button" onclick="openPrintableEmployeeDTR()" class="btn btn-primary" title="Print CS Form 48 — same layout as admin Employees DTR print (two copies per page)">
+                                                <i class="fas fa-print me-1"></i> Print
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small mb-1">Search</label>
@@ -1622,6 +1627,8 @@ include_navigation();
         
         const employeeId = '<?php echo htmlspecialchars($employee_id, ENT_QUOTES); ?>';
         const fullName = '<?php echo htmlspecialchars($fullName, ENT_QUOTES); ?>';
+        /** Absolute app path to monthly DTR print (same script & layout as admin bulk print). */
+        const employeeDtrPrintBase = <?php echo json_encode(clean_url('admin/print_employees_monthly_dtr.php', $basePath)); ?>;
         
         // Default official times (fallback)
         const DEFAULT_OFFICIAL_TIMES = {
@@ -2756,6 +2763,22 @@ include_navigation();
             fetchDTRData();
         }
 
+        /** Opens server-rendered CS Form 48 print page (same HTML/CSS as admin/print_employees_monthly_dtr.php). */
+        function openPrintableEmployeeDTR() {
+            const monthSelect = document.getElementById('dtrMonth');
+            const yearSelect = document.getElementById('dtrYear');
+            let month = monthSelect ? parseInt(monthSelect.value, 10) : NaN;
+            let year = yearSelect ? parseInt(yearSelect.value, 10) : NaN;
+            if (!month || month < 1 || month > 12 || !year) {
+                const now = new Date();
+                month = now.getMonth() + 1;
+                year = now.getFullYear();
+            }
+            const qs = '?year=' + encodeURIComponent(String(year)) + '&month=' + encodeURIComponent(String(month));
+            const base = employeeDtrPrintBase || '../admin/print_employees_monthly_dtr.php';
+            window.open(base + qs, '_blank', 'noopener,noreferrer');
+        }
+
         function fetchDTRData() {
             const monthSelect = document.getElementById('dtrMonth');
             const yearSelect = document.getElementById('dtrYear');
@@ -3403,6 +3426,9 @@ include_navigation();
                     </div>
                 </div>
                 <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openPrintableEmployeeDTR()" title="Printable DTR (same layout as admin Employees DTR print)">
+                        <i class="fas fa-print me-1"></i> Print / PDF
+                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>

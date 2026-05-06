@@ -25,6 +25,28 @@ if (!in_array($submissionFilter, ['all', 'submitted', 'not_submitted'], true)) {
     $submissionFilter = 'all';
 }
 
+$filterName = isset($_GET['name']) ? trim((string) $_GET['name']) : '';
+$filterDepartment = isset($_GET['department']) ? trim((string) $_GET['department']) : '';
+$filterEmploymentStatus = isset($_GET['employment_status']) ? trim((string) $_GET['employment_status']) : '';
+
+$empFilterSql = "u.user_type IN ('staff', 'faculty') AND u.is_active = 1";
+$empFilterParams = [];
+if ($filterName !== '') {
+    $empFilterSql .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) LIKE ?)";
+    $term = '%' . $filterName . '%';
+    $empFilterParams[] = $term;
+    $empFilterParams[] = $term;
+    $empFilterParams[] = $term;
+}
+if ($filterDepartment !== '') {
+    $empFilterSql .= ' AND fp.department = ?';
+    $empFilterParams[] = $filterDepartment;
+}
+if ($filterEmploymentStatus !== '') {
+    $empFilterSql .= ' AND fp.employment_status = ?';
+    $empFilterParams[] = $filterEmploymentStatus;
+}
+
 $monthStart = sprintf('%04d-%02d-01', $filterYear, $filterMonth);
 $lastDayOfMonth = (int) date('t', mktime(0, 0, 0, $filterMonth, 1, $filterYear));
 $monthEnd = sprintf('%04d-%02d-%02d', $filterYear, $filterMonth, $lastDayOfMonth);
@@ -39,7 +61,7 @@ try {
 
 // All employees (faculty and staff); has_dtr_submission = at least one daily DTR row in selected month
 if ($hasDtrDailyTable) {
-    $stmtEmp = $db->prepare("SELECT fp.employee_id, fp.position, fp.department,
+    $stmtEmp = $db->prepare("SELECT fp.employee_id, fp.position, fp.department, fp.employment_status,
                         COALESCE(u.first_name, '') AS first_name, COALESCE(u.last_name, '') AS last_name,
                         CASE WHEN EXISTS (
                             SELECT 1 FROM dtr_daily_submissions dds
@@ -48,21 +70,75 @@ if ($hasDtrDailyTable) {
                         ) THEN 1 ELSE 0 END AS has_dtr_submission
                         FROM faculty_profiles fp
                         LEFT JOIN users u ON fp.user_id = u.id
-                        WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+                        WHERE {$empFilterSql}
                         ORDER BY u.last_name ASC, u.first_name ASC");
-    $stmtEmp->execute([$monthStart, $monthEnd]);
+    $stmtEmp->execute(array_merge([$monthStart, $monthEnd], $empFilterParams));
 } else {
-    $stmtEmp = $db->prepare("SELECT fp.employee_id, fp.position, fp.department,
+    $stmtEmp = $db->prepare("SELECT fp.employee_id, fp.position, fp.department, fp.employment_status,
                         COALESCE(u.first_name, '') AS first_name, COALESCE(u.last_name, '') AS last_name,
                         0 AS has_dtr_submission
                         FROM faculty_profiles fp
                         LEFT JOIN users u ON fp.user_id = u.id
-                        WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+                        WHERE {$empFilterSql}
                         ORDER BY u.last_name ASC, u.first_name ASC");
-    $stmtEmp->execute();
+    $stmtEmp->execute($empFilterParams);
 }
 
 $staffEmployees = $stmtEmp->fetchAll(PDO::FETCH_ASSOC);
+
+$deptFilterOptions = [];
+$empStatusFilterOptions = [];
+try {
+    $stmtDept = $db->query("SELECT DISTINCT fp.department FROM faculty_profiles fp
+        INNER JOIN users u ON fp.user_id = u.id
+        WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+        AND fp.department IS NOT NULL AND TRIM(fp.department) <> ''
+        ORDER BY fp.department ASC");
+    if ($stmtDept) {
+        $deptFilterOptions = $stmtDept->fetchAll(PDO::FETCH_COLUMN);
+    }
+} catch (Exception $e) {
+    $deptFilterOptions = [];
+}
+try {
+    $stmtEs = $db->query("SELECT name FROM employment_statuses ORDER BY name ASC");
+    if ($stmtEs) {
+        $empStatusFilterOptions = $stmtEs->fetchAll(PDO::FETCH_COLUMN);
+    }
+} catch (Exception $e) {
+    $empStatusFilterOptions = [];
+}
+if ($empStatusFilterOptions === []) {
+    try {
+        $stmtEs2 = $db->query("SELECT DISTINCT fp.employment_status FROM faculty_profiles fp
+            INNER JOIN users u ON fp.user_id = u.id
+            WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+            AND fp.employment_status IS NOT NULL AND TRIM(fp.employment_status) <> ''
+            ORDER BY fp.employment_status ASC");
+        if ($stmtEs2) {
+            $empStatusFilterOptions = $stmtEs2->fetchAll(PDO::FETCH_COLUMN);
+        }
+    } catch (Exception $e2) {
+        $empStatusFilterOptions = [];
+    }
+} else {
+    try {
+        $stmtEs3 = $db->query("SELECT DISTINCT fp.employment_status FROM faculty_profiles fp
+            INNER JOIN users u ON fp.user_id = u.id
+            WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+            AND fp.employment_status IS NOT NULL AND TRIM(fp.employment_status) <> ''");
+        if ($stmtEs3) {
+            foreach ($stmtEs3->fetchAll(PDO::FETCH_COLUMN) as $v) {
+                if ($v !== null && $v !== '' && !in_array($v, $empStatusFilterOptions, true)) {
+                    $empStatusFilterOptions[] = $v;
+                }
+            }
+        }
+    } catch (Exception $e3) {
+        // keep master list only
+    }
+    sort($empStatusFilterOptions);
+}
 
 if ($submissionFilter === 'submitted') {
     $staffEmployees = array_values(array_filter($staffEmployees, function ($e) {
@@ -132,8 +208,8 @@ if ($submissionFilter === 'submitted') {
                 <?php displayMessage(); ?>
 
                 <div class="mb-3 text-start">
-                    <h6 class="mb-2 text-primary"><i class="fas fa-print me-2"></i>Print all employees' DTR</h6>
-                    <p class="small text-muted mb-2">Civil Service Form No. 48, monthly — two forms per A4 page (Appendix 24 style). Pardon column is not included.</p>
+                    <h6 class="mb-2 text-primary"><i class="fas fa-print me-2"></i>Print employees' DTR</h6>
+                    <p class="small text-muted mb-2">Civil Service Form No. 48, monthly — two forms per A4 page (Appendix 24 style). Pardon column is not included. Uses the <strong>name</strong>, <strong>department</strong>, and <strong>employment status</strong> filters below when set; month/year are chosen here.</p>
                     <div class="d-flex flex-wrap align-items-end gap-2 gap-md-3">
                         <div>
                             <label class="form-label small mb-1" for="printAllDtrMonth">Month</label>
@@ -152,8 +228,8 @@ if ($submissionFilter === 'submitted') {
                             </select>
                         </div>
                         <div>
-                            <button type="button" class="btn btn-primary btn-sm" id="printAllEmployeesDtrBtn" title="Opens print view in a new tab">
-                                <i class="fas fa-print me-1"></i> Print all DTR
+                            <button type="button" class="btn btn-primary btn-sm" id="printAllEmployeesDtrBtn" title="Opens print view in a new tab (respects filters: name, department, employment status)">
+                                <i class="fas fa-print me-1"></i> Print DTR
                             </button>
                         </div>
                     </div>
@@ -198,6 +274,32 @@ if ($submissionFilter === 'submitted') {
                                     <option value="not_submitted" <?php echo $submissionFilter === 'not_submitted' ? 'selected' : ''; ?>>Not yet submitted</option>
                                 </select>
                             </div>
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label class="form-label small mb-0" for="filterDtrName">Name</label>
+                                <input type="search" name="name" id="filterDtrName" class="form-control form-control-sm" placeholder="First or last name" value="<?php echo htmlspecialchars($filterName); ?>" autocomplete="off" aria-label="Filter by employee name">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-auto">
+                                <label class="form-label small mb-0" for="filterDtrDepartment">Department</label>
+                                <select name="department" id="filterDtrDepartment" class="form-select form-select-sm" aria-label="Filter by department" onchange="this.form.submit();">
+                                    <option value="">All departments</option>
+                                    <?php foreach ($deptFilterOptions as $dopt): ?>
+                                        <option value="<?php echo htmlspecialchars($dopt); ?>" <?php echo ($filterDepartment !== '' && $filterDepartment === $dopt) ? 'selected' : ''; ?>><?php echo htmlspecialchars($dopt); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-auto">
+                                <label class="form-label small mb-0" for="filterDtrEmploymentStatus">Employment status</label>
+                                <select name="employment_status" id="filterDtrEmploymentStatus" class="form-select form-select-sm" aria-label="Filter by employment status" onchange="this.form.submit();">
+                                    <option value="">All statuses</option>
+                                    <?php foreach ($empStatusFilterOptions as $esopt): ?>
+                                        <option value="<?php echo htmlspecialchars($esopt); ?>" <?php echo ($filterEmploymentStatus !== '' && $filterEmploymentStatus === $esopt) ? 'selected' : ''; ?>><?php echo htmlspecialchars($esopt); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12 col-lg-auto">
+                                <label class="form-label small mb-0 d-block visually-hidden" for="filterDtrApplyBtn">Apply filters</label>
+                                <button type="submit" class="btn btn-outline-primary btn-sm" id="filterDtrApplyBtn"><i class="fas fa-filter me-1"></i> Apply filters</button>
+                            </div>
                         </form>
                         <div class="row align-items-center flex-wrap g-2 mt-2 pt-2 border-top">
                             <div class="col-12 col-md-4 col-lg-3 col-search">
@@ -228,6 +330,7 @@ if ($submissionFilter === 'submitted') {
                                         <th>Safe Employee ID</th>
                                         <th>Position</th>
                                         <th>Department</th>
+                                        <th>Employment status</th>
                                         <th><?php echo htmlspecialchars(date('M Y', mktime(0, 0, 0, $filterMonth, 1, $filterYear))); ?> DTR</th>
                                         <th class="text-end">Action</th>
                                     </tr>
@@ -241,8 +344,10 @@ if ($submissionFilter === 'submitted') {
                                         $name = $name !== '' ? $name : ('Staff ' . $emp['employee_id']);
                                         $position = $emp['position'] ?? '—';
                                         $department = $emp['department'] ?? '—';
+                                        $empStatus = trim((string) ($emp['employment_status'] ?? ''));
+                                        $empStatusDisplay = $empStatus !== '' ? $empStatus : '—';
                                         $hasSub = ((int) ($emp['has_dtr_submission'] ?? 0) === 1);
-                                        $searchText = strtolower($name . ' ' . $emp['employee_id'] . ' ' . $position . ' ' . $department . ' ' . ($hasSub ? 'submitted' : 'not submitted'));
+                                        $searchText = strtolower($name . ' ' . $emp['employee_id'] . ' ' . $position . ' ' . $department . ' ' . $empStatusDisplay . ' ' . ($hasSub ? 'submitted' : 'not submitted'));
                                     ?>
                                         <tr class="employee-row" data-search="<?php echo htmlspecialchars($searchText); ?>" data-name="<?php echo htmlspecialchars($name); ?>" data-employee-id="<?php echo htmlspecialchars($emp['employee_id']); ?>" data-dtr-submitted="<?php echo $hasSub ? '1' : '0'; ?>">
                                             <td class="employee-row-num" data-label="#"><?php echo $idx; ?></td>
@@ -250,6 +355,7 @@ if ($submissionFilter === 'submitted') {
                                             <td data-label="Safe Employee ID"><span class="badge bg-secondary"><?php echo htmlspecialchars($emp['employee_id']); ?></span></td>
                                             <td data-label="Position"><?php echo htmlspecialchars($position); ?></td>
                                             <td data-label="Department"><?php echo htmlspecialchars($department); ?></td>
+                                            <td data-label="Employment status"><?php echo htmlspecialchars($empStatusDisplay); ?></td>
                                             <td data-label="DTR">
                                                 <?php if (!$hasDtrDailyTable): ?>
                                                     <span class="badge bg-secondary">—</span>
@@ -278,7 +384,7 @@ if ($submissionFilter === 'submitted') {
                                         </tr>
                                     <?php endforeach; ?>
                                     <tr id="employeeNoResults" class="d-none">
-                                        <td colspan="7">
+                                        <td colspan="8">
                                             <div class="text-center py-4 text-muted">
                                                 <i class="fas fa-search fa-2x mb-2"></i>
                                                 <p class="mb-0">No employees match your search.</p>
@@ -287,7 +393,7 @@ if ($submissionFilter === 'submitted') {
                                     </tr>
                                     <?php if (empty($staffEmployees)): ?>
                                         <tr>
-                                            <td colspan="7">
+                                            <td colspan="8">
                                                 <div class="text-center py-4 text-muted">
                                                     <i class="fas fa-users-slash fa-2x mb-2"></i>
                                                     <p class="mb-0">No employees found.</p>
@@ -542,6 +648,21 @@ if ($submissionFilter === 'submitted') {
                 if (printBtn && printMonth && printYear) {
                     printBtn.addEventListener('click', function() {
                         var url = 'print_employees_monthly_dtr.php?month=' + encodeURIComponent(printMonth.value) + '&year=' + encodeURIComponent(printYear.value);
+                        var form = document.getElementById('employeesDtrSubmissionFilterForm');
+                        if (form) {
+                            var nameEl = form.querySelector('#filterDtrName');
+                            var deptEl = form.querySelector('#filterDtrDepartment');
+                            var statEl = form.querySelector('#filterDtrEmploymentStatus');
+                            if (nameEl && nameEl.value && String(nameEl.value).trim() !== '') {
+                                url += '&name=' + encodeURIComponent(String(nameEl.value).trim());
+                            }
+                            if (deptEl && deptEl.value) {
+                                url += '&department=' + encodeURIComponent(deptEl.value);
+                            }
+                            if (statEl && statEl.value) {
+                                url += '&employment_status=' + encodeURIComponent(statEl.value);
+                            }
+                        }
                         window.open(url, '_blank', 'noopener');
                     });
                 }

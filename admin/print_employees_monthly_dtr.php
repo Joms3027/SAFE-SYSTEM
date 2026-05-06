@@ -11,7 +11,15 @@ require_once '../includes/database.php';
 require_once '../includes/staff_dtr_month_data.php';
 require_once '../includes/calendar_holiday_week_schedule.php';
 
-requireAdmin();
+requireAuth();
+$isEmployeeSelfPrint = !isAdmin();
+if ($isEmployeeSelfPrint) {
+    if (!isFaculty() && !isStaff()) {
+        $_SESSION['error'] = 'Access denied.';
+        $basePath = getBasePath();
+        redirect(clean_url($basePath . '/faculty/dashboard.php', $basePath));
+    }
+}
 
 $year = isset($_GET['year']) ? (int) $_GET['year'] : (int) date('Y');
 $month = isset($_GET['month']) ? (int) $_GET['month'] : (int) date('n');
@@ -22,6 +30,36 @@ if ($month < 1 || $month > 12) {
     $month = (int) date('n');
 }
 
+if ($isEmployeeSelfPrint) {
+    $filterName = '';
+    $filterDepartment = '';
+    $filterEmploymentStatus = '';
+} else {
+    $filterName = isset($_GET['name']) ? trim((string) $_GET['name']) : '';
+    $filterDepartment = isset($_GET['department']) ? trim((string) $_GET['department']) : '';
+    $filterEmploymentStatus = isset($_GET['employment_status']) ? trim((string) $_GET['employment_status']) : '';
+}
+
+$empFilterSql = "u.user_type IN ('staff', 'faculty') AND u.is_active = 1";
+$empFilterParams = [];
+if (!$isEmployeeSelfPrint) {
+    if ($filterName !== '') {
+        $empFilterSql .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) LIKE ?)";
+        $term = '%' . $filterName . '%';
+        $empFilterParams[] = $term;
+        $empFilterParams[] = $term;
+        $empFilterParams[] = $term;
+    }
+    if ($filterDepartment !== '') {
+        $empFilterSql .= ' AND fp.department = ?';
+        $empFilterParams[] = $filterDepartment;
+    }
+    if ($filterEmploymentStatus !== '') {
+        $empFilterSql .= ' AND fp.employment_status = ?';
+        $empFilterParams[] = $filterEmploymentStatus;
+    }
+}
+
 $dateFrom = sprintf('%04d-%02d-01', $year, $month);
 $daysInMonth = (int) date('t', strtotime($dateFrom));
 $dateTo = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
@@ -30,14 +68,26 @@ $monthLabel = date('F Y', strtotime($dateFrom));
 $database = Database::getInstance();
 $db = $database->getConnection();
 
-$stmtEmp = $db->prepare("SELECT fp.employee_id, fp.position, fp.department,
-    COALESCE(u.first_name, '') as first_name, COALESCE(u.last_name, '') as last_name
-    FROM faculty_profiles fp
-    LEFT JOIN users u ON fp.user_id = u.id
-    WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
-    ORDER BY u.last_name ASC, u.first_name ASC");
-$stmtEmp->execute();
-$employees = $stmtEmp->fetchAll(PDO::FETCH_ASSOC);
+if ($isEmployeeSelfPrint) {
+    $stmtSelf = $db->prepare("SELECT fp.employee_id, fp.position, fp.department,
+        COALESCE(u.first_name, '') as first_name, COALESCE(u.last_name, '') as last_name
+        FROM faculty_profiles fp
+        LEFT JOIN users u ON fp.user_id = u.id
+        WHERE fp.user_id = ? AND u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+        LIMIT 1");
+    $stmtSelf->execute([(int) $_SESSION['user_id']]);
+    $empRow = $stmtSelf->fetch(PDO::FETCH_ASSOC);
+    $employees = ($empRow && !empty($empRow['employee_id'])) ? [$empRow] : [];
+} else {
+    $stmtEmp = $db->prepare("SELECT fp.employee_id, fp.position, fp.department,
+        COALESCE(u.first_name, '') as first_name, COALESCE(u.last_name, '') as last_name
+        FROM faculty_profiles fp
+        LEFT JOIN users u ON fp.user_id = u.id
+        WHERE {$empFilterSql}
+        ORDER BY u.last_name ASC, u.first_name ASC");
+    $stmtEmp->execute($empFilterParams);
+    $employees = $stmtEmp->fetchAll(PDO::FETCH_ASSOC);
+}
 
 /**
  * @return array{lunchOut:int,lunchIn:int,timeOut:int}
@@ -209,6 +259,18 @@ foreach ($employees as $emp) {
     ];
 }
 
+$printFilterBits = [];
+if ($filterName !== '') {
+    $printFilterBits[] = 'name: ' . $filterName;
+}
+if ($filterDepartment !== '') {
+    $printFilterBits[] = 'dept: ' . $filterDepartment;
+}
+if ($filterEmploymentStatus !== '') {
+    $printFilterBits[] = 'status: ' . $filterEmploymentStatus;
+}
+$printFilterSummary = $printFilterBits !== [] ? implode(' · ', $printFilterBits) : '';
+
 // One employee per page: left and right are duplicate CS Form 48 copies (same name and data).
 ?>
 <!DOCTYPE html>
@@ -216,7 +278,7 @@ foreach ($employees as $emp) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Employees DTR — <?php echo htmlspecialchars($monthLabel); ?></title>
+    <title>Employees DTR — <?php echo htmlspecialchars($monthLabel); ?><?php echo $printFilterSummary !== '' ? ' (filtered)' : ''; ?></title>
     <style>
         /* Appendix 24 style: pair of CS Form 48 fills A4 portrait with minimal margin */
         @page { size: A4 portrait; margin: 4mm 4.5mm; }
@@ -365,7 +427,14 @@ foreach ($employees as $emp) {
         <button type="button" onclick="window.print()">Print / Save as PDF</button>
         <button type="button" onclick="window.close()">Close</button>
         <span style="margin-left: 12px; color: #666;">
-            <?php echo count($dtrForms); ?> employee(s) — <?php echo htmlspecialchars($monthLabel); ?> — each page: 2 identical DTR copies per employee (no pardon column)
+            <?php if ($isEmployeeSelfPrint): ?>
+                Your DTR — <?php echo htmlspecialchars($monthLabel); ?> — printable layout matches bulk admin print (2 identical CS Form 48 copies per page; no pardon column).
+            <?php else: ?>
+                <?php echo count($dtrForms); ?> employee(s) — <?php echo htmlspecialchars($monthLabel); ?> — each page: 2 identical DTR copies per employee (no pardon column)
+                <?php if ($printFilterSummary !== ''): ?>
+                    <br><span style="display: inline-block; margin-top: 6px;"><strong>Filters:</strong> <?php echo htmlspecialchars($printFilterSummary); ?></span>
+                <?php endif; ?>
+            <?php endif; ?>
         </span>
     </div>
 
@@ -432,7 +501,9 @@ foreach ($employees as $emp) {
 
     <?php if (empty($dtrForms)): ?>
         <div class="a4-page">
-            <p style="padding: 20px; text-align: center;">No employees found.</p>
+            <p style="padding: 20px; text-align: center;">
+                <?php echo $isEmployeeSelfPrint ? 'Your employee profile was not found or has no Safe Employee ID. Update your profile or contact HR.' : 'No employees found.'; ?>
+            </p>
         </div>
     <?php endif; ?>
 </body>
