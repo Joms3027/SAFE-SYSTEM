@@ -21,7 +21,7 @@ $deanDepartment = trim($userProfile['department'] ?? '');
 $hasScopeAssignments = hasPardonOpenerAssignments($_SESSION['user_id'], $db);
 
 if ($isDean && $deanDepartment !== '') {
-    $scopeLabel = $deanDepartment;
+    $scopeLabel = $hasScopeAssignments ? ($deanDepartment . ' and assigned opener scope') : $deanDepartment;
 } elseif ($hasScopeAssignments) {
     $scopeLabel = 'Your Scope';
 } else {

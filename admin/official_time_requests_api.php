@@ -48,7 +48,9 @@ if ($isFaculty && isset($_SESSION['user_id'])) {
             $currentUserEmployeeId = trim($row['employee_id']);
         }
     }
-    if (!$isDean && function_exists('hasPardonOpenerAssignments') && hasPardonOpenerAssignments($_SESSION['user_id'], $db)) {
+    // Pardon opener scope applies even when the user is also a Dean, so multi-unit supervisors
+    // (e.g. CPAM Dean + University Library assignment) see all subordinates' pending requests.
+    if (function_exists('hasPardonOpenerAssignments') && hasPardonOpenerAssignments($_SESSION['user_id'], $db)) {
         $hasScopeAssignments = true;
         $scopeEmployeeIds = function_exists('getEmployeeIdsInScope') ? getEmployeeIdsInScope($_SESSION['user_id'], $db) : [];
         // Exclude self: cannot endorse own official time (only assigned person can endorse)
@@ -57,6 +59,8 @@ if ($isFaculty && isset($_SESSION['user_id'])) {
         }
     }
 }
+
+$deanHasDepartment = ($isDean && $deanDepartment !== '');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
@@ -249,12 +253,12 @@ try {
         }
 
         case 'list_for_dean': {
-            $canList = ($isDean && $deanDepartment !== '') || $hasScopeAssignments;
+            $canList = $deanHasDepartment || $hasScopeAssignments;
             if (!$canList) {
                 echo json_encode(['success' => false, 'message' => 'Only deans or assigned personnel can list official time requests']);
                 exit;
             }
-            if ($isDean && $deanDepartment !== '') {
+            if ($deanHasDepartment && empty($scopeEmployeeIds)) {
                 $deanListSql = "SELECT otr.id, otr.employee_id, otr.start_date, otr.end_date, otr.weekday, otr.time_in, otr.lunch_out, otr.lunch_in, otr.time_out, otr.submitted_at,
                     u.first_name, u.last_name, fp.department, fp.designation
                     FROM official_time_requests otr
@@ -269,11 +273,7 @@ try {
                 $deanListSql .= " ORDER BY otr.submitted_at ASC";
                 $stmt = $db->prepare($deanListSql);
                 $stmt->execute($deanListParams);
-            } else {
-                if (empty($scopeEmployeeIds)) {
-                    echo json_encode(['success' => true, 'requests' => []]);
-                    exit;
-                }
+            } elseif (!$deanHasDepartment && !empty($scopeEmployeeIds)) {
                 $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
                 $stmt = $db->prepare("SELECT otr.id, otr.employee_id, otr.start_date, otr.end_date, otr.weekday, otr.time_in, otr.lunch_out, otr.lunch_in, otr.time_out, otr.submitted_at,
                     u.first_name, u.last_name, fp.department, fp.designation
@@ -283,6 +283,28 @@ try {
                     WHERE otr.status = 'pending_dean' AND otr.employee_id IN ($placeholders)
                     ORDER BY otr.submitted_at ASC");
                 $stmt->execute($scopeEmployeeIds);
+            } elseif ($deanHasDepartment && !empty($scopeEmployeeIds)) {
+                $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
+                $deanListSql = "SELECT otr.id, otr.employee_id, otr.start_date, otr.end_date, otr.weekday, otr.time_in, otr.lunch_out, otr.lunch_in, otr.time_out, otr.submitted_at,
+                    u.first_name, u.last_name, fp.department, fp.designation
+                    FROM official_time_requests otr
+                    JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
+                    JOIN users u ON u.id = fp.user_id
+                    WHERE otr.status = 'pending_dean' AND (
+                        LOWER(TRIM(fp.department)) = LOWER(?)
+                        OR otr.employee_id IN ($placeholders)
+                    )";
+                $deanListParams = array_merge([$deanDepartment], $scopeEmployeeIds);
+                if ($currentUserEmployeeId !== '') {
+                    $deanListSql .= " AND otr.employee_id != ?";
+                    $deanListParams[] = $currentUserEmployeeId;
+                }
+                $deanListSql .= " ORDER BY otr.submitted_at ASC";
+                $stmt = $db->prepare($deanListSql);
+                $stmt->execute($deanListParams);
+            } else {
+                echo json_encode(['success' => true, 'requests' => []]);
+                exit;
             }
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -309,12 +331,12 @@ try {
         }
 
         case 'list_for_dean_grouped': {
-            $canList = ($isDean && $deanDepartment !== '') || $hasScopeAssignments;
+            $canList = $deanHasDepartment || $hasScopeAssignments;
             if (!$canList) {
                 echo json_encode(['success' => false, 'message' => 'Only deans or assigned personnel can list official time requests']);
                 exit;
             }
-            if ($isDean && $deanDepartment !== '') {
+            if ($deanHasDepartment && empty($scopeEmployeeIds)) {
                 $deanGroupSql = "SELECT otr.id, otr.employee_id, otr.start_date, otr.end_date, otr.weekday, otr.time_in, otr.lunch_out, otr.lunch_in, otr.time_out, otr.submitted_at,
                     u.first_name, u.last_name
                     FROM official_time_requests otr
@@ -329,11 +351,7 @@ try {
                 $deanGroupSql .= " ORDER BY otr.submitted_at ASC";
                 $stmt = $db->prepare($deanGroupSql);
                 $stmt->execute($deanGroupParams);
-            } else {
-                if (empty($scopeEmployeeIds)) {
-                    echo json_encode(['success' => true, 'groups' => []]);
-                    exit;
-                }
+            } elseif (!$deanHasDepartment && !empty($scopeEmployeeIds)) {
                 $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
                 $stmt = $db->prepare("SELECT otr.id, otr.employee_id, otr.start_date, otr.end_date, otr.weekday, otr.time_in, otr.lunch_out, otr.lunch_in, otr.time_out, otr.submitted_at,
                     u.first_name, u.last_name
@@ -343,6 +361,28 @@ try {
                     WHERE otr.status = 'pending_dean' AND otr.employee_id IN ($placeholders)
                     ORDER BY otr.submitted_at ASC");
                 $stmt->execute($scopeEmployeeIds);
+            } elseif ($deanHasDepartment && !empty($scopeEmployeeIds)) {
+                $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
+                $deanGroupSql = "SELECT otr.id, otr.employee_id, otr.start_date, otr.end_date, otr.weekday, otr.time_in, otr.lunch_out, otr.lunch_in, otr.time_out, otr.submitted_at,
+                    u.first_name, u.last_name
+                    FROM official_time_requests otr
+                    JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
+                    JOIN users u ON u.id = fp.user_id
+                    WHERE otr.status = 'pending_dean' AND (
+                        LOWER(TRIM(fp.department)) = LOWER(?)
+                        OR otr.employee_id IN ($placeholders)
+                    )";
+                $deanGroupParams = array_merge([$deanDepartment], $scopeEmployeeIds);
+                if ($currentUserEmployeeId !== '') {
+                    $deanGroupSql .= " AND otr.employee_id != ?";
+                    $deanGroupParams[] = $currentUserEmployeeId;
+                }
+                $deanGroupSql .= " ORDER BY otr.submitted_at ASC";
+                $stmt = $db->prepare($deanGroupSql);
+                $stmt->execute($deanGroupParams);
+            } else {
+                echo json_encode(['success' => true, 'groups' => []]);
+                exit;
             }
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -371,9 +411,9 @@ try {
             echo json_encode(['success' => true, 'groups' => array_values($grouped)]);
             exit;
         }
-
+        
         case 'endorse': {
-            $canEndorse = ($isDean && $deanDepartment !== '') || $hasScopeAssignments;
+            $canEndorse = $deanHasDepartment || $hasScopeAssignments;
             if (!$canEndorse) {
                 echo json_encode(['success' => false, 'message' => 'Only deans or assigned personnel can endorse official time requests']);
                 exit;
@@ -383,7 +423,7 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Invalid request ID']);
                 exit;
             }
-            if ($isDean && $deanDepartment !== '') {
+            if ($deanHasDepartment && empty($scopeEmployeeIds)) {
                 $deanSql = "SELECT otr.id FROM official_time_requests otr
                     JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
                     WHERE otr.id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
@@ -394,15 +434,29 @@ try {
                 }
                 $stmt = $db->prepare($deanSql);
                 $stmt->execute($deanParams);
-            } else {
-                if (empty($scopeEmployeeIds)) {
-                    echo json_encode(['success' => false, 'message' => 'Request not found or not in your scope']);
-                    exit;
-                }
+            } elseif (!$deanHasDepartment && !empty($scopeEmployeeIds)) {
                 $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr
                     WHERE otr.id = ? AND otr.status = 'pending_dean' AND otr.employee_id IN ($placeholders)");
                 $stmt->execute(array_merge([$id], $scopeEmployeeIds));
+            } elseif ($deanHasDepartment && !empty($scopeEmployeeIds)) {
+                $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
+                $combSql = "SELECT otr.id FROM official_time_requests otr
+                    JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
+                    WHERE otr.id = ? AND otr.status = 'pending_dean' AND (
+                        LOWER(TRIM(fp.department)) = LOWER(?)
+                        OR otr.employee_id IN ($placeholders)
+                    )";
+                $combParams = array_merge([$id, $deanDepartment], $scopeEmployeeIds);
+                if ($currentUserEmployeeId !== '') {
+                    $combSql .= " AND otr.employee_id != ?";
+                    $combParams[] = $currentUserEmployeeId;
+                }
+                $stmt = $db->prepare($combSql);
+                $stmt->execute($combParams);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Request not found or not in your scope']);
+                exit;
             }
             if (!$stmt->fetch()) {
                 echo json_encode(['success' => false, 'message' => 'Request not found or not in your scope']);
@@ -415,7 +469,7 @@ try {
         }
 
         case 'endorse_batch': {
-            $canEndorse = ($isDean && $deanDepartment !== '') || $hasScopeAssignments;
+            $canEndorse = $deanHasDepartment || $hasScopeAssignments;
             if (!$canEndorse) {
                 echo json_encode(['success' => false, 'message' => 'Only deans or assigned personnel can endorse official time requests']);
                 exit;
@@ -425,16 +479,16 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Employee ID is required']);
                 exit;
             }
-            if ($isDean && $deanDepartment !== '') {
-                if ($employee_id === $currentUserEmployeeId) {
-                    echo json_encode(['success' => false, 'message' => 'You cannot endorse your own official time. Only the person assigned to you can endorse it.']);
-                    exit;
-                }
+            if ($employee_id === $currentUserEmployeeId) {
+                echo json_encode(['success' => false, 'message' => 'You cannot endorse your own official time. Only the person assigned to you can endorse it.']);
+                exit;
+            }
+            if ($deanHasDepartment && empty($scopeEmployeeIds)) {
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr
                     JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
                     WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)");
                 $stmt->execute([$employee_id, $deanDepartment]);
-            } else {
+            } elseif (!$deanHasDepartment && !empty($scopeEmployeeIds)) {
                 if (!in_array($employee_id, $scopeEmployeeIds)) {
                     echo json_encode(['success' => false, 'message' => 'Employee not in your scope']);
                     exit;
@@ -442,6 +496,18 @@ try {
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr
                     WHERE otr.employee_id = ? AND otr.status = 'pending_dean'");
                 $stmt->execute([$employee_id]);
+            } elseif ($deanHasDepartment && !empty($scopeEmployeeIds)) {
+                $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
+                $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr
+                    JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id
+                    WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND (
+                        LOWER(TRIM(fp.department)) = LOWER(?)
+                        OR otr.employee_id IN ($placeholders)
+                    )");
+                $stmt->execute(array_merge([$employee_id, $deanDepartment], $scopeEmployeeIds));
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Employee not in your scope']);
+                exit;
             }
             $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
             if (empty($ids)) {
@@ -458,7 +524,7 @@ try {
         }
 
         case 'reject_dean': {
-            $canReject = ($isDean && $deanDepartment !== '') || $hasScopeAssignments;
+            $canReject = $deanHasDepartment || $hasScopeAssignments;
             if (!$canReject) {
                 echo json_encode(['success' => false, 'message' => 'Only deans or assigned personnel can reject official time requests']);
                 exit;
@@ -473,7 +539,7 @@ try {
             $reqStmt->execute([$id]);
             $reqEmp = $reqStmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($isDean && $deanDepartment !== '') {
+            if ($deanHasDepartment && empty($scopeEmployeeIds)) {
                 $deanSql = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
                 $deanParams = [$id, $deanDepartment];
                 if ($currentUserEmployeeId !== '') {
@@ -482,14 +548,26 @@ try {
                 }
                 $stmt = $db->prepare($deanSql);
                 $stmt->execute($deanParams);
-            } else {
-                if (empty($scopeEmployeeIds)) {
-                    echo json_encode(['success' => false, 'message' => 'Request not found or not in your scope']);
-                    exit;
-                }
+            } elseif (!$deanHasDepartment && !empty($scopeEmployeeIds)) {
                 $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr WHERE otr.id = ? AND otr.status = 'pending_dean' AND otr.employee_id IN ($placeholders)");
                 $stmt->execute(array_merge([$id], $scopeEmployeeIds));
+            } elseif ($deanHasDepartment && !empty($scopeEmployeeIds)) {
+                $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
+                $cj = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.id = ? AND otr.status = 'pending_dean' AND (
+                    LOWER(TRIM(fp.department)) = LOWER(?)
+                    OR otr.employee_id IN ($placeholders)
+                )";
+                $cjParams = array_merge([$id, $deanDepartment], $scopeEmployeeIds);
+                if ($currentUserEmployeeId !== '') {
+                    $cj .= " AND otr.employee_id != ?";
+                    $cjParams[] = $currentUserEmployeeId;
+                }
+                $stmt = $db->prepare($cj);
+                $stmt->execute($cjParams);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Request not found or not in your scope']);
+                exit;
             }
             if (!$stmt->fetch()) {
                 echo json_encode(['success' => false, 'message' => 'Request not found or not in your scope']);
@@ -520,7 +598,7 @@ try {
         }
 
         case 'reject_employee_dean': {
-            $canReject = ($isDean && $deanDepartment !== '') || $hasScopeAssignments;
+            $canReject = $deanHasDepartment || $hasScopeAssignments;
             if (!$canReject) {
                 echo json_encode(['success' => false, 'message' => 'Only deans or assigned personnel can reject official time requests']);
                 exit;
@@ -531,20 +609,30 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Employee ID is required']);
                 exit;
             }
-            if ($isDean && $deanDepartment !== '') {
-                if ($employee_id === $currentUserEmployeeId) {
-                    echo json_encode(['success' => false, 'message' => 'You cannot reject your own official time.']);
-                    exit;
-                }
+            if ($employee_id === $currentUserEmployeeId) {
+                echo json_encode(['success' => false, 'message' => 'You cannot reject your own official time.']);
+                exit;
+            }
+            if ($deanHasDepartment && empty($scopeEmployeeIds)) {
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)");
                 $stmt->execute([$employee_id, $deanDepartment]);
-            } else {
+            } elseif (!$deanHasDepartment && !empty($scopeEmployeeIds)) {
                 if (!in_array($employee_id, $scopeEmployeeIds)) {
                     echo json_encode(['success' => false, 'message' => 'Employee not in your scope']);
                     exit;
                 }
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr WHERE otr.employee_id = ? AND otr.status = 'pending_dean'");
                 $stmt->execute([$employee_id]);
+            } elseif ($deanHasDepartment && !empty($scopeEmployeeIds)) {
+                $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
+                $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.employee_id = ? AND otr.status = 'pending_dean' AND (
+                    LOWER(TRIM(fp.department)) = LOWER(?)
+                    OR otr.employee_id IN ($placeholders)
+                )");
+                $stmt->execute(array_merge([$employee_id, $deanDepartment], $scopeEmployeeIds));
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Employee not in your scope']);
+                exit;
             }
             $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
             if (empty($ids)) {
@@ -575,12 +663,12 @@ try {
         }
 
         case 'endorse_all': {
-            $canEndorse = ($isDean && $deanDepartment !== '') || $hasScopeAssignments;
+            $canEndorse = $deanHasDepartment || $hasScopeAssignments;
             if (!$canEndorse) {
                 echo json_encode(['success' => false, 'message' => 'Only deans or assigned personnel can endorse official time requests']);
                 exit;
             }
-            if ($isDean && $deanDepartment !== '') {
+            if ($deanHasDepartment && empty($scopeEmployeeIds)) {
                 $deanSql = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.status = 'pending_dean' AND LOWER(TRIM(fp.department)) = LOWER(?)";
                 $deanParams = [$deanDepartment];
                 if ($currentUserEmployeeId !== '') {
@@ -589,14 +677,26 @@ try {
                 }
                 $stmt = $db->prepare($deanSql);
                 $stmt->execute($deanParams);
-            } else {
-                if (empty($scopeEmployeeIds)) {
-                    echo json_encode(['success' => true, 'message' => '0 request(s) endorsed.', 'count' => 0]);
-                    exit;
-                }
+            } elseif (!$deanHasDepartment && !empty($scopeEmployeeIds)) {
                 $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
                 $stmt = $db->prepare("SELECT otr.id FROM official_time_requests otr WHERE otr.status = 'pending_dean' AND otr.employee_id IN ($placeholders)");
                 $stmt->execute($scopeEmployeeIds);
+            } elseif ($deanHasDepartment && !empty($scopeEmployeeIds)) {
+                $placeholders = implode(',', array_fill(0, count($scopeEmployeeIds), '?'));
+                $deanSql = "SELECT otr.id FROM official_time_requests otr JOIN faculty_profiles fp ON fp.employee_id = otr.employee_id WHERE otr.status = 'pending_dean' AND (
+                    LOWER(TRIM(fp.department)) = LOWER(?)
+                    OR otr.employee_id IN ($placeholders)
+                )";
+                $deanParams = array_merge([$deanDepartment], $scopeEmployeeIds);
+                if ($currentUserEmployeeId !== '') {
+                    $deanSql .= " AND otr.employee_id != ?";
+                    $deanParams[] = $currentUserEmployeeId;
+                }
+                $stmt = $db->prepare($deanSql);
+                $stmt->execute($deanParams);
+            } else {
+                echo json_encode(['success' => true, 'message' => '0 request(s) endorsed.', 'count' => 0]);
+                exit;
             }
             $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
             if (empty($ids)) {
