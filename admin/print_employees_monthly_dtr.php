@@ -144,6 +144,70 @@ function print_emp_dtr_parse_time_minutes($timeStr) {
     return null;
 }
 
+/** 12-hour display for official times (matches admin/print_dtr.php formatTime). */
+function print_emp_monthly_format_time($time) {
+    if (!$time) {
+        return '-';
+    }
+    $ts = strtotime((string) $time);
+    if ($ts === false) {
+        return '-';
+    }
+    return date('h:i A', $ts);
+}
+
+function print_emp_monthly_official_times_row_has_lunch(array $ot) {
+    $lo = isset($ot['lunch_out']) ? trim((string) $ot['lunch_out']) : '';
+    $li = isset($ot['lunch_in']) ? trim((string) $ot['lunch_in']) : '';
+    return $lo !== '' && $lo !== '00:00:00' && $li !== '' && $li !== '00:00:00';
+}
+
+/**
+ * Official schedule rows overlapping the print window — same filter/sort as admin/print_dtr.php summary.
+ *
+ * @return array<int, array<string,mixed>>
+ */
+function print_emp_monthly_official_summary_rows(PDO $db, $employee_id, $periodStart, $periodEnd) {
+    $stmt = $db->prepare('SELECT * FROM employee_official_times WHERE employee_id = ? ORDER BY start_date DESC');
+    $stmt->execute([(string) $employee_id]);
+    $official_times_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $officialSummaryRows = [];
+    foreach ($official_times_list as $ot) {
+        $sd = $ot['start_date'] ?? '';
+        if ($sd === '' || $sd === null) {
+            continue;
+        }
+        $ed = $ot['end_date'];
+        if ($sd > $periodEnd) {
+            continue;
+        }
+        if ($ed !== null && $ed !== '' && $ed < $periodStart) {
+            continue;
+        }
+        $officialSummaryRows[] = $ot;
+    }
+    $weekdayOrder = ['Monday' => 1, 'Tuesday' => 2, 'Wednesday' => 3, 'Thursday' => 4, 'Friday' => 5, 'Saturday' => 6, 'Sunday' => 7];
+    usort($officialSummaryRows, function ($a, $b) use ($weekdayOrder) {
+        $cmp = strcmp((string) ($a['start_date'] ?? ''), (string) ($b['start_date'] ?? ''));
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+        $wa = $a['weekday'] ?? null;
+        $wb = $b['weekday'] ?? null;
+        if (($wa === null || $wa === '') && ($wb === null || $wb === '')) {
+            return 0;
+        }
+        if ($wa === null || $wa === '') {
+            return -1;
+        }
+        if ($wb === null || $wb === '') {
+            return 1;
+        }
+        return ($weekdayOrder[$wa] ?? 99) <=> ($weekdayOrder[$wb] ?? 99);
+    });
+    return $officialSummaryRows;
+}
+
 /**
  * @param array|null $log
  * @return array{h: string, m: string}
@@ -195,12 +259,23 @@ function print_emp_dtr_undertime($log, $isSaturday, $officialRegular, $officialS
 }
 
 $dtrForms = [];
+$default_official_times_cs48 = [
+    'time_in' => '08:00:00',
+    'lunch_out' => '12:00:00',
+    'lunch_in' => '13:00:00',
+    'time_out' => '17:00:00',
+];
+$official_summary_period_label = ($dateFrom === $dateTo)
+    ? date('M j, Y', strtotime($dateFrom))
+    : date('M j, Y', strtotime($dateFrom)) . ' – ' . date('M j, Y', strtotime($dateTo));
+
 foreach ($employees as $emp) {
     $name = trim(($emp['first_name'] ?? '') . ' ' . ($emp['last_name'] ?? ''));
     if ($name === '') {
         $name = 'Staff ' . ($emp['employee_id'] ?? '');
     }
     $bundle = staff_dtr_fetch_month_bundle($db, $emp['employee_id'], $dateFrom, $dateTo);
+    $official_summary_rows = print_emp_monthly_official_summary_rows($db, $emp['employee_id'], $dateFrom, $dateTo);
     $logByDate = [];
     foreach ($bundle['logs'] as $le) {
         if (!empty($le['log_date'])) {
@@ -256,6 +331,9 @@ foreach ($employees as $emp) {
         'official_saturday' => $bundle['official_saturday'],
         'in_charge' => $bundle['in_charge'] ?: 'HR',
         'rows' => $rows,
+        'official_summary_rows' => $official_summary_rows,
+        'official_summary_period_label' => $official_summary_period_label,
+        'official_default' => $default_official_times_cs48,
     ];
 }
 
@@ -390,6 +468,21 @@ $printFilterSummary = $printFilterBits !== [] ? implode(' · ', $printFilterBits
         .dtr-certify { font-size: 5pt; margin: 0 0 0.5mm; line-height: 1.15; text-align: justify; }
         .dtr-verified { font-size: 5pt; margin: 0; line-height: 1.15; }
         .dtr-verified .dtr-incharge { display: block; font-weight: 700; margin-top: 0.5mm; }
+        /* Matches admin/print_dtr.php .summary-official table (scaled for CS Form 48 footer). */
+        .dtr-official-summary { margin-top: 1mm; border-top: 0.25pt solid #000; padding-top: 0.75mm; }
+        .dtr-official-summary-title { font-weight: 700; margin-bottom: 0.5mm; font-size: 5pt; line-height: 1.15; }
+        .dtr-official-summary-table { width: 100%; border-collapse: collapse; font-size: 4.5pt; table-layout: fixed; }
+        .dtr-official-summary-table th,
+        .dtr-official-summary-table td {
+            padding: 0.35mm 0.4mm;
+            border: 0.35pt solid #000;
+            text-align: center;
+            word-wrap: break-word;
+            line-height: 1.1;
+        }
+        .dtr-official-summary-table th { background: #e8e8e8; font-weight: 700; }
+        .dtr-official-summary-table td.dtr-os-day,
+        .dtr-official-summary-table td.dtr-os-effective { text-align: left; }
 
         .dtr-form-spacer {
             border: 0.35pt solid transparent;
@@ -493,6 +586,58 @@ $printFilterSummary = $printFilterBits !== [] ? implode(' · ', $printFilterBits
                     <div class="dtr-form-footer">
                         <p class="dtr-certify">I certify on my honor that the above is a true and correct report of the hours of work performed, record of which was made daily at the time of arrival and departure from office.</p>
                         <p class="dtr-verified">VERIFIED as to the prescribed office hours:<br>In Charge<br><strong class="dtr-incharge"><?php echo htmlspecialchars($form['in_charge']); ?></strong></p>
+                        <div class="dtr-official-summary" aria-label="Official time for this employee">
+                            <div class="dtr-official-summary-title">Official time (report period: <?php echo htmlspecialchars($form['official_summary_period_label']); ?>)</div>
+                            <table class="dtr-official-summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>Effective</th>
+                                        <th>Time In</th>
+                                        <th>Lunch Out</th>
+                                        <th>Lunch In</th>
+                                        <th>Time Out</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $defOt = $form['official_default'] ?? $default_official_times_cs48;
+                                    $sumRows = $form['official_summary_rows'] ?? [];
+                                    if (empty($sumRows)): ?>
+                                        <tr>
+                                            <td class="dtr-os-day">All days</td>
+                                            <td class="dtr-os-effective">Default</td>
+                                            <td><?php echo htmlspecialchars(print_emp_monthly_format_time($defOt['time_in'])); ?></td>
+                                            <td><?php echo htmlspecialchars(print_emp_monthly_format_time($defOt['lunch_out'])); ?></td>
+                                            <td><?php echo htmlspecialchars(print_emp_monthly_format_time($defOt['lunch_in'])); ?></td>
+                                            <td><?php echo htmlspecialchars(print_emp_monthly_format_time($defOt['time_out'])); ?></td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($sumRows as $otRow): ?>
+                                            <?php
+                                            $effStart = $otRow['start_date'] ?? '';
+                                            $effEnd = $otRow['end_date'];
+                                            $effLabel = $effStart !== '' && $effStart !== null
+                                                ? date('M j, Y', strtotime((string) $effStart)) . ' – ' . (($effEnd === null || $effEnd === '') ? 'present' : date('M j, Y', strtotime((string) $effEnd)))
+                                                : '—';
+                                            $dayLabel = (isset($otRow['weekday']) && $otRow['weekday'] !== '' && $otRow['weekday'] !== null)
+                                                ? (string) $otRow['weekday']
+                                                : 'All days';
+                                            $hasL = print_emp_monthly_official_times_row_has_lunch($otRow);
+                                            ?>
+                                            <tr>
+                                                <td class="dtr-os-day"><?php echo htmlspecialchars($dayLabel); ?></td>
+                                                <td class="dtr-os-effective"><?php echo htmlspecialchars($effLabel); ?></td>
+                                                <td><?php echo htmlspecialchars(print_emp_monthly_format_time($otRow['time_in'] ?? null)); ?></td>
+                                                <td><?php echo $hasL ? htmlspecialchars(print_emp_monthly_format_time($otRow['lunch_out'] ?? null)) : '—'; ?></td>
+                                                <td><?php echo $hasL ? htmlspecialchars(print_emp_monthly_format_time($otRow['lunch_in'] ?? null)) : '—'; ?></td>
+                                                <td><?php echo htmlspecialchars(print_emp_monthly_format_time($otRow['time_out'] ?? null)); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             <?php endfor; ?>
