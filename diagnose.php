@@ -6,6 +6,12 @@
  * IMPORTANT: Delete this file after fixing the issue for security!
  */
 
+$diagProd = getenv('PRODUCTION');
+if (getenv('APP_ENV') === 'production' || ($diagProd !== false && filter_var($diagProd, FILTER_VALIDATE_BOOLEAN))) {
+    http_response_code(404);
+    exit;
+}
+
 // Enable error display for diagnostics
 error_reporting(E_ALL);
 ini_set('display_errors', 1);

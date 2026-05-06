@@ -10,6 +10,11 @@
 // Start session with same config as main app
 require_once 'includes/config.php';
 
+if (defined('IS_PRODUCTION') && IS_PRODUCTION) {
+    http_response_code(404);
+    exit;
+}
+
 header('Content-Type: text/plain; charset=utf-8');
 
 echo "=== SESSION DEBUG INFORMATION ===\n\n";

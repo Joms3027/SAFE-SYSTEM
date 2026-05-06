@@ -27,10 +27,9 @@ Options +FollowSymLinks
     RewriteCond %{REQUEST_URI} favicon\.ico$ [NC]
     RewriteRule ^ - [R=204,L]
     
-    # Force HTTPS in production (uncomment when using SSL)
-    # ⚠️ IMPORTANT: Uncomment these lines after SSL certificate is configured
-    # RewriteCond %{HTTPS} off
-    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    # Force HTTPS when SSL is enabled (XAMPP + mkcert — see apache/conf/ssl/mkcert)
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     
     # Block suspicious query strings (before other rewrites)
     RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
