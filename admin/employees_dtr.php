@@ -1,7 +1,7 @@
 <?php
 /**
- * Employees DTR - admin and super_admin.
- * View employee attendance logs and open pardon for employees.
+ * Faculty DTR - admin and super_admin only (requireAdmin).
+ * View faculty attendance logs. Supervisors may open faculty pardon; HR (admin / super_admin) can open or close it here as well.
  */
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -29,7 +29,7 @@ $filterName = isset($_GET['name']) ? trim((string) $_GET['name']) : '';
 $filterDepartment = isset($_GET['department']) ? trim((string) $_GET['department']) : '';
 $filterEmploymentStatus = isset($_GET['employment_status']) ? trim((string) $_GET['employment_status']) : '';
 
-$empFilterSql = "u.user_type IN ('staff', 'faculty') AND u.is_active = 1";
+$empFilterSql = "u.user_type = 'faculty' AND u.is_active = 1";
 $empFilterParams = [];
 if ($filterName !== '') {
     $empFilterSql .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) LIKE ?)";
@@ -59,7 +59,7 @@ try {
     $hasDtrDailyTable = false;
 }
 
-// All employees (faculty and staff); has_dtr_submission = at least one daily DTR row in selected month
+// Faculty only; has_dtr_submission = at least one daily DTR row in selected month
 if ($hasDtrDailyTable) {
     $stmtEmp = $db->prepare("SELECT fp.employee_id, fp.position, fp.department, fp.employment_status,
                         COALESCE(u.first_name, '') AS first_name, COALESCE(u.last_name, '') AS last_name,
@@ -84,14 +84,14 @@ if ($hasDtrDailyTable) {
     $stmtEmp->execute($empFilterParams);
 }
 
-$staffEmployees = $stmtEmp->fetchAll(PDO::FETCH_ASSOC);
+$facultyEmployees = $stmtEmp->fetchAll(PDO::FETCH_ASSOC);
 
 $deptFilterOptions = [];
 $empStatusFilterOptions = [];
 try {
     $stmtDept = $db->query("SELECT DISTINCT fp.department FROM faculty_profiles fp
         INNER JOIN users u ON fp.user_id = u.id
-        WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+        WHERE u.user_type = 'faculty' AND u.is_active = 1
         AND fp.department IS NOT NULL AND TRIM(fp.department) <> ''
         ORDER BY fp.department ASC");
     if ($stmtDept) {
@@ -112,7 +112,7 @@ if ($empStatusFilterOptions === []) {
     try {
         $stmtEs2 = $db->query("SELECT DISTINCT fp.employment_status FROM faculty_profiles fp
             INNER JOIN users u ON fp.user_id = u.id
-            WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+            WHERE u.user_type = 'faculty' AND u.is_active = 1
             AND fp.employment_status IS NOT NULL AND TRIM(fp.employment_status) <> ''
             ORDER BY fp.employment_status ASC");
         if ($stmtEs2) {
@@ -125,7 +125,7 @@ if ($empStatusFilterOptions === []) {
     try {
         $stmtEs3 = $db->query("SELECT DISTINCT fp.employment_status FROM faculty_profiles fp
             INNER JOIN users u ON fp.user_id = u.id
-            WHERE u.user_type IN ('staff', 'faculty') AND u.is_active = 1
+            WHERE u.user_type = 'faculty' AND u.is_active = 1
             AND fp.employment_status IS NOT NULL AND TRIM(fp.employment_status) <> ''");
         if ($stmtEs3) {
             foreach ($stmtEs3->fetchAll(PDO::FETCH_COLUMN) as $v) {
@@ -141,11 +141,11 @@ if ($empStatusFilterOptions === []) {
 }
 
 if ($submissionFilter === 'submitted') {
-    $staffEmployees = array_values(array_filter($staffEmployees, function ($e) {
+    $facultyEmployees = array_values(array_filter($facultyEmployees, function ($e) {
         return ((int) ($e['has_dtr_submission'] ?? 0) === 1);
     }));
 } elseif ($submissionFilter === 'not_submitted') {
-    $staffEmployees = array_values(array_filter($staffEmployees, function ($e) {
+    $facultyEmployees = array_values(array_filter($facultyEmployees, function ($e) {
         return ((int) ($e['has_dtr_submission'] ?? 0) !== 1);
     }));
 }
@@ -155,7 +155,7 @@ if ($submissionFilter === 'submitted') {
 <head>
     <?php
     require_once '../includes/admin_layout_helper.php';
-    admin_page_head('Employees DTR', 'View employee attendance logs and open pardon');
+    admin_page_head('Faculty DTR', 'View faculty attendance logs (supervisors may open pardon; HR can open or close it from the DTR view)');
     ?>
     <style>
         .employees-dtr-page .page-title { font-size: 1.5rem; font-weight: 600; color: #003366; display: flex; align-items: center; gap: 0.5rem; }
@@ -208,8 +208,8 @@ if ($submissionFilter === 'submitted') {
                 <?php displayMessage(); ?>
 
                 <div class="mb-3 text-start">
-                    <h6 class="mb-2 text-primary"><i class="fas fa-print me-2"></i>Print employees' DTR</h6>
-                    <p class="small text-muted mb-2">Civil Service Form No. 48, monthly — two forms per A4 page (Appendix 24 style). Pardon column is not included. Uses the <strong>name</strong>, <strong>department</strong>, and <strong>employment status</strong> filters below when set; month/year are chosen here.</p>
+                    <h6 class="mb-2 text-primary"><i class="fas fa-print me-2"></i>Print faculty DTR</h6>
+                    <p class="small text-muted mb-2">Civil Service Form No. 48, monthly — two forms per A4 page (Appendix 24 style). Pardon column is not included. Uses the <strong>name</strong>, <strong>department</strong>, and <strong>employment status</strong> filters below when set; month/year are chosen here (<strong>faculty only</strong>).</p>
                     <div class="d-flex flex-wrap align-items-end gap-2 gap-md-3">
                         <div>
                             <label class="form-label small mb-1" for="printAllDtrMonth">Month</label>
@@ -245,7 +245,7 @@ if ($submissionFilter === 'submitted') {
                     <div class="card-header dept-dtr-card-header bg-light">
                         <div class="row align-items-end flex-wrap g-2 mb-2 mb-md-0">
                             <div class="col-12 col-md-auto">
-                                <h5 class="mb-0"><i class="fas fa-users me-2"></i>All Employees (Faculty & Staff)</h5>
+                                <h5 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i>Faculty</h5>
                                 <p class="small text-muted mb-0 mt-1">DTR submission status uses daily records in the selected month (at least one day submitted = &ldquo;Submitted&rdquo;).</p>
                             </div>
                         </div>
@@ -269,7 +269,7 @@ if ($submissionFilter === 'submitted') {
                             <div class="col-12 col-sm-8 col-md-4 col-lg-auto">
                                 <label class="form-label small mb-0" for="filterDtrSubmission">DTR submission</label>
                                 <select name="submission" id="filterDtrSubmission" class="form-select form-select-sm" aria-label="Filter by DTR submission status" <?php echo !$hasDtrDailyTable ? 'disabled' : ''; ?> onchange="if (!this.disabled) this.form.submit();">
-                                    <option value="all" <?php echo $submissionFilter === 'all' ? 'selected' : ''; ?>>All employees</option>
+                                    <option value="all" <?php echo $submissionFilter === 'all' ? 'selected' : ''; ?>>All faculty</option>
                                     <option value="submitted" <?php echo $submissionFilter === 'submitted' ? 'selected' : ''; ?>>Submitted (≥1 day in month)</option>
                                     <option value="not_submitted" <?php echo $submissionFilter === 'not_submitted' ? 'selected' : ''; ?>>Not yet submitted</option>
                                 </select>
@@ -304,7 +304,7 @@ if ($submissionFilter === 'submitted') {
                         <div class="row align-items-center flex-wrap g-2 mt-2 pt-2 border-top">
                             <div class="col-12 col-md-4 col-lg-3 col-search">
                                 <label class="form-label small mb-0 visually-hidden" for="employeeSearch">Search employees</label>
-                                <input type="search" id="employeeSearch" class="form-control form-control-sm" placeholder="Search name, ID, position..." autocomplete="off" aria-label="Search employees">
+                                <input type="search" id="employeeSearch" class="form-control form-control-sm" placeholder="Search name, ID, position..." autocomplete="off" aria-label="Search faculty">
                             </div>
                             <div class="col-12 col-md-auto ms-md-auto col-rows">
                                 <div class="d-flex align-items-center gap-2">
@@ -338,10 +338,10 @@ if ($submissionFilter === 'submitted') {
                                 <tbody id="employeeTableBody">
                                     <?php 
                                     $idx = 0;
-                                    foreach ($staffEmployees as $emp): 
+                                    foreach ($facultyEmployees as $emp): 
                                         $idx++;
                                         $name = trim(($emp['first_name'] ?? '') . ' ' . ($emp['last_name'] ?? ''));
-                                        $name = $name !== '' ? $name : ('Staff ' . $emp['employee_id']);
+                                        $name = $name !== '' ? $name : ('Faculty ' . $emp['employee_id']);
                                         $position = $emp['position'] ?? '—';
                                         $department = $emp['department'] ?? '—';
                                         $empStatus = trim((string) ($emp['employment_status'] ?? ''));
@@ -387,16 +387,16 @@ if ($submissionFilter === 'submitted') {
                                         <td colspan="8">
                                             <div class="text-center py-4 text-muted">
                                                 <i class="fas fa-search fa-2x mb-2"></i>
-                                                <p class="mb-0">No employees match your search.</p>
+                                                <p class="mb-0">No faculty match your search.</p>
                                             </div>
                                         </td>
                                     </tr>
-                                    <?php if (empty($staffEmployees)): ?>
+                                    <?php if (empty($facultyEmployees)): ?>
                                         <tr>
                                             <td colspan="8">
                                                 <div class="text-center py-4 text-muted">
                                                     <i class="fas fa-users-slash fa-2x mb-2"></i>
-                                                    <p class="mb-0">No employees found.</p>
+                                                    <p class="mb-0">No faculty found.</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -406,7 +406,7 @@ if ($submissionFilter === 'submitted') {
                         </div>
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 border-top" id="employeePaginationWrap">
                             <div class="small text-muted" id="employeePaginationInfo">Showing 0–0 of 0</div>
-                            <nav aria-label="Employees list pagination">
+                            <nav aria-label="Faculty list pagination">
                                 <ul class="pagination pagination-sm mb-0" id="employeePagination"></ul>
                             </nav>
                         </div>
@@ -474,7 +474,7 @@ if ($submissionFilter === 'submitted') {
                                     <th class="dtr-time">Departure</th>
                                     <th class="dtr-undertime">Hours</th>
                                     <th class="dtr-undertime">Minutes</th>
-                                    <th class="dtr-pardon">Open for staff</th>
+                                    <th class="dtr-pardon text-muted small">HR / supervisor</th>
                                 </tr>
                             </thead>
                             <tbody id="dtrTableBody"></tbody>
@@ -647,7 +647,7 @@ if ($submissionFilter === 'submitted') {
                 var printYear = document.getElementById('printAllDtrYear');
                 if (printBtn && printMonth && printYear) {
                     printBtn.addEventListener('click', function() {
-                        var url = 'print_employees_monthly_dtr.php?month=' + encodeURIComponent(printMonth.value) + '&year=' + encodeURIComponent(printYear.value);
+                        var url = 'print_employees_monthly_dtr.php?employee_type=faculty&month=' + encodeURIComponent(printMonth.value) + '&year=' + encodeURIComponent(printYear.value);
                         var form = document.getElementById('employeesDtrSubmissionFilterForm');
                         if (form) {
                             var nameEl = form.querySelector('#filterDtrName');
@@ -919,21 +919,24 @@ if ($submissionFilter === 'submitted') {
                     utHrs = String(Math.floor(undertimeMinutes / 60));
                     utMin = String(undertimeMinutes % 60);
                 }
-                // Pardon cell: HR (admin/super_admin) opens for staff
-                let pardonCell = '<td class="dtr-pardon small">-</td>';
                 const status = log ? (log.pardon_status || '') : '';
                 const open = log ? (log.pardon_open === true) : false;
                 const openByList = pardonOpenDates && pardonOpenDates.indexOf(dateKey) >= 0;
+                const isOpened = open || openByList;
+                const skipOpenPardon = log && log.is_holiday && !log.has_holiday_attendance;
+                let pardonCell;
                 if (status === 'pending') {
                     pardonCell = '<td class="dtr-pardon small"><span class="badge bg-warning">Pending</span></td>';
                 } else if (status === 'approved') {
                     pardonCell = '<td class="dtr-pardon small"><span class="badge bg-success">Approved</span></td>';
                 } else if (status === 'rejected') {
                     pardonCell = '<td class="dtr-pardon small"><span class="badge bg-danger">Rejected</span></td>';
-                } else if (open || openByList) {
-                    pardonCell = '<td class="dtr-pardon small"><span class="badge bg-info">Opened</span> <button type="button" class="btn btn-sm btn-outline-secondary close-pardon-btn" data-date="' + dateKey + '" title="Undo accidental open">Close</button></td>';
+                } else if (isOpened) {
+                    pardonCell = '<td class="dtr-pardon small"><span class="badge bg-success">Opened</span> <button type="button" class="btn btn-sm btn-outline-secondary employees-dtr-close-pardon py-0" data-date="' + dateKey + '" data-emp-id="' + selectedEmployeeId + '" title="Undo accidental open">Close</button></td>';
+                } else if (!log || skipOpenPardon) {
+                    pardonCell = '<td class="dtr-pardon small">—</td>';
                 } else {
-                    pardonCell = '<td class="dtr-pardon small"><button type="button" class="btn btn-sm btn-outline-primary open-pardon-btn" data-date="' + dateKey + '" title="Allow staff to submit pardon for this date">Open</button></td>';
+                    pardonCell = '<td class="dtr-pardon small"><button type="button" class="btn btn-sm btn-outline-primary employees-dtr-open-pardon py-0" data-date="' + dateKey + '" data-emp-id="' + selectedEmployeeId + '" title="Allow faculty to submit pardon for this date">Open</button></td>';
                 }
                 const tr = document.createElement('tr');
                 if (isTarfRow) {
@@ -980,58 +983,46 @@ if ($submissionFilter === 'submitted') {
             totalRow.className = 'dtr-total';
             totalRow.innerHTML = '<td class="dtr-day">Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
             tbody.appendChild(totalRow);
-
-            tbody.querySelectorAll('.open-pardon-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const date = this.getAttribute('data-date');
-                    if (!date || !selectedEmployeeId) return;
-                    const f = new FormData();
-                    f.append('employee_id', selectedEmployeeId);
-                    f.append('log_date', date);
-                    btn.disabled = true;
-                    fetch('open_pardon_api.php', { method: 'POST', body: f })
-                        .then(function(r) { return r.json(); })
-                        .then(function(data) {
-                            if (data.success) {
-                                if (data.pardon_open_dates) pardonOpenDates = data.pardon_open_dates;
-                                renderDTR();
-                            } else {
-                                alert(data.message || 'Failed to open pardon');
-                                btn.disabled = false;
-                            }
-                        })
-                        .catch(function() {
-                            alert('Request failed. Please try again.');
-                            btn.disabled = false;
-                        });
-                });
-            });
-            tbody.querySelectorAll('.close-pardon-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const date = this.getAttribute('data-date');
-                    if (!date || !selectedEmployeeId) return;
-                    const f = new FormData();
-                    f.append('employee_id', selectedEmployeeId);
-                    f.append('log_date', date);
-                    btn.disabled = true;
-                    fetch('close_pardon_api.php', { method: 'POST', body: f })
-                        .then(function(r) { return r.json(); })
-                        .then(function(data) {
-                            if (data.success) {
-                                if (data.pardon_open_dates) pardonOpenDates = data.pardon_open_dates;
-                                renderDTR();
-                            } else {
-                                alert(data.message || 'Failed to close pardon');
-                                btn.disabled = false;
-                            }
-                        })
-                        .catch(function() {
-                            alert('Request failed. Please try again.');
-                            btn.disabled = false;
-                        });
-                });
-            });
         }
+
+        (function bindEmployeesDtrPardonActions() {
+            var tbody = document.getElementById('dtrTableBody');
+            if (!tbody || tbody.dataset.pardonDelegateBound) return;
+            tbody.dataset.pardonDelegateBound = '1';
+            tbody.addEventListener('click', function(e) {
+                var openBtn = e.target.closest('.employees-dtr-open-pardon');
+                var closeBtn = e.target.closest('.employees-dtr-close-pardon');
+                var btn = openBtn || closeBtn;
+                if (!btn || btn.disabled) return;
+                var dateKey = btn.getAttribute('data-date');
+                var empId = btn.getAttribute('data-emp-id');
+                if (!dateKey || !empId) return;
+                var url = openBtn ? 'open_pardon_api.php' : 'close_pardon_api.php';
+                btn.disabled = true;
+                var formData = new FormData();
+                formData.append('employee_id', empId);
+                formData.append('log_date', dateKey);
+                fetch(url, { method: 'POST', body: formData, credentials: 'same-origin' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res.success) {
+                            if (typeof showToast === 'function') showToast(res.message, 'success');
+                            else if (res.message) alert(res.message);
+                            if (res.pardon_open_dates) pardonOpenDates = res.pardon_open_dates;
+                            renderDTR();
+                        } else {
+                            if (typeof showToast === 'function') showToast(res.message || 'Request failed', 'error');
+                            else alert(res.message || 'Request failed');
+                            btn.disabled = false;
+                        }
+                    })
+                    .catch(function() {
+                        if (typeof showToast === 'function') showToast('Request failed. Please try again.', 'error');
+                        else alert('Request failed. Please try again.');
+                        btn.disabled = false;
+                    });
+            });
+        })();
     </script>
 </body>
 </html>

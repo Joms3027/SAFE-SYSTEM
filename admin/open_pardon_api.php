@@ -1,8 +1,8 @@
 <?php
 /**
- * Open pardon for an employee+date.
- * - Super Admin and ordinary Admin: can open for staff (HR).
- * - Admin/Faculty with pardon_opener_assignments: can open for faculty in their scope.
+ * Open pardon for an employee+date (staff or faculty).
+ * Faculty may also be opened by their supervisor (faculty/open_pardon_api.php).
+ * Super Admin and Admin (HR) may open pardon for staff and faculty here.
  */
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -49,34 +49,28 @@ if (!$empRow) {
 $empUserType = $empRow['user_type'] ?? '';
 $sessionUserType = $_SESSION['user_type'] ?? '';
 
-if ($empUserType === 'staff') {
-    if (!in_array($sessionUserType, ['super_admin', 'admin'], true)) {
-        echo json_encode(['success' => false, 'message' => 'Only HR can open staff pardon.']);
-        exit;
-    }
-} else {
-    if ($sessionUserType === 'super_admin') {
-        echo json_encode(['success' => false, 'message' => 'Only staff pardon can be opened here. Faculty pardon is opened by their supervisor.']);
-        exit;
-    }
-    if (!canUserOpenPardonForEmployee($_SESSION['user_id'], $employee_id, $db)) {
-        echo json_encode(['success' => false, 'message' => 'You do not have permission to open pardon for this employee.']);
-        exit;
-    }
+if (!in_array($empUserType, ['staff', 'faculty'], true)) {
+    echo json_encode(['success' => false, 'message' => 'Invalid employee type for pardon.']);
+    exit;
+}
+if (!in_array($sessionUserType, ['super_admin', 'admin'], true)) {
+    echo json_encode(['success' => false, 'message' => 'Only HR can open pardon from this tool.']);
+    exit;
 }
 
 try {
     $stmt = $db->prepare("INSERT INTO pardon_open (employee_id, log_date, opened_by_user_id) VALUES (?, ?, ?)
                           ON DUPLICATE KEY UPDATE opened_by_user_id = VALUES(opened_by_user_id), opened_at = CURRENT_TIMESTAMP");
     $stmt->execute([$employee_id, $log_date, $_SESSION['user_id']]);
-    logAction('PARDON_OPENED', "HR opened pardon for staff $employee_id on $log_date");
+    logAction('PARDON_OPENED', "HR opened pardon for {$empUserType} $employee_id on $log_date");
     
     // Fetch updated pardon_open_dates for this employee
     $stmtPo = $db->prepare("SELECT log_date FROM pardon_open WHERE employee_id = ?");
     $stmtPo->execute([$employee_id]);
     $pardon_open_dates = $stmtPo->fetchAll(PDO::FETCH_COLUMN);
     
-    echo json_encode(['success' => true, 'message' => 'Pardon opened for this date. The staff can now submit a pardon request from View Logs.', 'pardon_open_dates' => $pardon_open_dates]);
+    $who = $empUserType === 'faculty' ? 'The faculty member' : 'The staff member';
+    echo json_encode(['success' => true, 'message' => "Pardon opened for this date. {$who} can now submit a pardon request from View Logs.", 'pardon_open_dates' => $pardon_open_dates]);
 } catch (Exception $e) {
     error_log('admin/open_pardon_api.php: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Failed to open pardon. Please try again.']);

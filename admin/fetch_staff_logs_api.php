@@ -25,16 +25,18 @@ if (empty($employee_id)) {
 $database = Database::getInstance();
 $db = $database->getConnection();
 
-// Verify employee exists (faculty or staff)
-$stmt = $db->prepare("SELECT fp.employee_id FROM faculty_profiles fp 
+// Verify employee exists (faculty or staff) and resolve user_type for clients
+$stmt = $db->prepare("SELECT u.user_type FROM faculty_profiles fp 
                       JOIN users u ON fp.user_id = u.id 
                       WHERE fp.employee_id = ? AND u.user_type IN ('staff', 'faculty') AND u.is_active = 1 LIMIT 1");
 $stmt->execute([$employee_id]);
-if (!$stmt->fetch()) {
+$empTypeRow = $stmt->fetch(PDO::FETCH_ASSOC);
+if (!$empTypeRow) {
     http_response_code(403);
     echo json_encode(['success' => false, 'logs' => [], 'message' => 'Employee not found.']);
     exit;
 }
+$resolvedEmployeeUserType = $empTypeRow['user_type'] ?? 'staff';
 
 closeSessionEarly(true);
 
@@ -52,7 +54,7 @@ try {
         'count' => count($bundle['logs']),
         'employee_id' => $employee_id,
         'pardon_open_dates' => $bundle['pardon_open_dates'],
-        'employee_user_type' => 'staff',
+        'employee_user_type' => $resolvedEmployeeUserType,
         'official_regular' => $bundle['official_regular'],
         'official_saturday' => $bundle['official_saturday'],
         'official_by_date' => $bundle['official_by_date'] ?? [],
